@@ -155,6 +155,9 @@ class StatusBarItem: NSObject, NSMenuDelegate {
     }
 
     func menuWillOpen(_ menu: NSMenu) {
+        if #unavailable(macOS 27.0), preparePre27StatusMenuForOpeningAbortsHollowMenu() {
+            return
+        }
         isStatusBarMenuTracking = true
         SharedStore.ui.menuWidth = menu.size.width
         SharedStore.ui.menuOpened = true
@@ -318,25 +321,46 @@ class StatusBarItem: NSObject, NSMenuDelegate {
     }
 
     private func finishHidingExpandedPanel(_ panel: StatusBarExpandedPanel) {
+        reattachMenuViewFromPinPanelIfNeeded()
         panel.orderOut(nil)
         panel.alphaValue = 1
-        reattachMenuViewFromPinPanelIfNeeded()
     }
 
-    /// After pin-panel dismiss, move the hosting view back into the `NSMenu` item.
-    /// Never call while `NSMenu` is tracking — `NSMenuItem` does not own the view as its direct superview.
+    @discardableResult
+    private func preparePre27StatusMenuForOpeningAbortsHollowMenu() -> Bool {
+        if isPre27MenuPanelVisible {
+            if SharedStore.ui.isStatusMenuPinned {
+                statusBarMenu.cancelTracking()
+                expandedPanel?.makeKeyAndOrderFront(nil)
+                SharedStore.ui.menuOpened = true
+                return true
+            }
+            hideExpandedInterface(animated: false, force: true)
+        }
+        reattachMenuViewFromPinPanelIfNeeded()
+        return false
+    }
+
+    /// Move the shared hosting view back onto the `NSMenu` item after the pin panel dismisses.
+    /// Do not call while `NSMenu` is tracking.
     private func reattachMenuViewFromPinPanelIfNeeded() {
         guard #unavailable(macOS 27.0) else {
+            return
+        }
+        guard !isStatusBarMenuTracking else {
             return
         }
         guard let menuView = menuView, let customItem = statusMenuCustomItem else {
             return
         }
-        guard menuView.window is StatusBarExpandedPanel else {
+        guard customItem.view !== menuView else {
             return
         }
         menuView.removeFromSuperview()
         customItem.view = menuView
+        if expandedPanel?.contentView === menuView {
+            expandedPanel?.contentView = nil
+        }
     }
 
     func dismissMenuOrExpandedInterface() {
