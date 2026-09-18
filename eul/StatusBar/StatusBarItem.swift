@@ -18,6 +18,31 @@ final class StatusBarExpandedPanel: NSPanel {
     override var canBecomeMain: Bool { false }
 }
 
+/// Pre–macOS 27 pin keep-open: continuous `.menu` material like `NSMenu`, not a clear floating panel.
+final class StatusBarCompactMenuPanelContainer: NSVisualEffectView {
+    let hostingView: NSView
+
+    init(hostingView: NSView) {
+        self.hostingView = hostingView
+        super.init(frame: .zero)
+        material = .menu
+        blendingMode = .behindWindow
+        state = .active
+        wantsLayer = true
+        addSubview(hostingView)
+    }
+
+    @available(*, unavailable)
+    required init?(coder _: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func layout() {
+        super.layout()
+        hostingView.frame = bounds
+    }
+}
+
 @available(macOS 27.0, *)
 private final class StatusBarExpandedInterfaceCoordinator: NSObject, NSStatusItemExpandedInterfaceDelegate {
     weak var owner: StatusBarItem?
@@ -47,6 +72,7 @@ class StatusBarItem: NSObject, NSMenuDelegate {
     private let item: NSStatusItem
     private var statusView: NSHostingView<AnyView>?
     private var menuView: NSHostingView<AnyView>?
+    private var statusMenuCustomItem: NSMenuItem?
     private var expandedPanel: StatusBarExpandedPanel?
     private var expandedCoordinator: AnyObject?
     private var expandedEventMonitor: Any?
@@ -61,6 +87,8 @@ class StatusBarItem: NSObject, NSMenuDelegate {
     private var visibilityObservation: NSKeyValueObservation?
     private var statusBarSizeChanged = 0
     private var extraLayoutGeneration = 0
+    /// Pre–macOS 27: defer `orderFront` until SwiftUI reports real height (avoids 100pt placeholder frame).
+    private var pre27CompactPanelAwaitingLayout = false
 
     /// Called when AppKit updates `NSStatusItem.isVisible` (Control Center, menu-bar settings, or in-app toggle).
     var onVisibilityChange: ((Bool) -> Void)?
@@ -132,6 +160,16 @@ class StatusBarItem: NSObject, NSMenuDelegate {
     func onMenuSizeChange(size: CGSize) {
         SharedStore.ui.menuWidth = size.width
         menuView?.setFrameSize(NSSize(width: size.width, height: size.height))
+        if #unavailable(macOS 27.0) {
+            if expandedPanel != nil, size.height > 1, size.width > 1 {
+                positionExpandedPanel()
+            }
+            if pre27CompactPanelAwaitingLayout, size.height > 1, size.width > 1 {
+                pre27CompactPanelAwaitingLayout = false
+                expandedPanel?.makeKeyAndOrderFront(nil)
+            }
+            return
+        }
         if expandedPanel?.isVisible == true {
             positionExpandedPanel()
         }
@@ -151,12 +189,44 @@ class StatusBarItem: NSObject, NSMenuDelegate {
         item.button?.setAccessibilityRole(.button)
     }
 
+    func showExpandedInterface() {
+        if #available(macOS 27.0, *) {
+            // A toggle-click cancel may be immediately followed by the system
+            // beginning a fresh session for the same click. End that session
+            // instead of flashing the panel back open.
+            if Date().timeIntervalSince(lastToggleCancel) < 0.5 {
+                lastToggleCancel = .distantPast
+                cancelExpandedInterfaceSession()
+                return
+            }
+        }
+        presentDropdownPanel()
+    }
+
+    private func presentDropdownPanel() {
+        SharedStore.ui.menuOpened = true
+        expandedGeneration += 1
+        ensureExpandedPanel()
+        positionExpandedPanel()
+        applyExpandedPanelPinChrome(pinned: SharedStore.ui.isStatusMenuPinned)
+        installExpandedInterfaceMonitors()
+        beginExpandedDismissSuppression()
+        expandedPanel?.alphaValue = 1
+        expandedPanel?.makeKeyAndOrderFront(nil)
+    }
+
     func menuWillOpen(_ menu: NSMenu) {
         SharedStore.ui.menuWidth = menu.size.width
         SharedStore.ui.menuOpened = true
     }
 
     func menuDidClose(_: NSMenu) {
+        if #unavailable(macOS 27.0), expandedPanel?.isVisible == true {
+            return
+        }
+        if SharedStore.ui.isStatusMenuPinned {
+            return
+        }
         SharedStore.ui.menuOpened = false
         SharedStore.ui.clearPinnedMenuProcesses()
     }
@@ -180,23 +250,15 @@ class StatusBarItem: NSObject, NSMenuDelegate {
         menuView?.appearance = appearance
     }
 
-    func showExpandedInterface() {
-        // A toggle-click cancel may be immediately followed by the system
-        // beginning a fresh session for the same click. End that session
-        // instead of flashing the panel back open.
-        if Date().timeIntervalSince(lastToggleCancel) < 0.5 {
-            lastToggleCancel = .distantPast
-            cancelExpandedInterfaceSession()
+    @objc private func handlePre27StatusItemClick(_: Any?) {
+        guard #unavailable(macOS 27.0) else {
             return
         }
-        SharedStore.ui.menuOpened = true
-        expandedGeneration += 1
-        ensureExpandedPanel()
-        positionExpandedPanel()
-        applyExpandedPanelPinChrome(pinned: SharedStore.ui.isStatusMenuPinned)
-        installExpandedInterfaceMonitors()
-        expandedPanel?.alphaValue = 1
-        expandedPanel?.makeKeyAndOrderFront(nil)
+        if expandedPanel?.isVisible == true {
+            hideExpandedInterface(animated: true, force: SharedStore.ui.isStatusMenuPinned)
+            return
+        }
+        presentPre27CompactDropdown()
     }
 
     func toggleStatusMenuPin() {
@@ -205,9 +267,44 @@ class StatusBarItem: NSObject, NSMenuDelegate {
             return
         }
         SharedStore.ui.isStatusMenuPinned = true
-        applyExpandedPanelPinChrome(pinned: true)
-        // End the system session so mouse-leave does not tear the panel down.
-        cancelExpandedInterfaceSession()
+        if #available(macOS 27.0, *) {
+            applyExpandedPanelPinChrome(pinned: true)
+            // End the system session so mouse-leave does not tear the panel down.
+            cancelExpandedInterfaceSession()
+        } else if expandedPanel?.isVisible == true {
+            applyExpandedPanelPinChrome(pinned: true)
+            beginExpandedDismissSuppression()
+        } else {
+            presentPre27CompactDropdown()
+        }
+    }
+
+    private func presentPre27CompactDropdown() {
+        guard #unavailable(macOS 27.0) else {
+            return
+        }
+        SharedStore.ui.menuOpened = true
+        expandedGeneration += 1
+        ensurePre27CompactPanel()
+        pre27CompactPanelAwaitingLayout = true
+        applyExpandedPanelPinChrome(pinned: SharedStore.ui.isStatusMenuPinned)
+        installExpandedInterfaceMonitors()
+        beginExpandedDismissSuppression()
+        expandedPanel?.alphaValue = 1
+        revealPre27CompactPanelIfLayoutReady()
+    }
+
+    private func revealPre27CompactPanelIfLayoutReady() {
+        guard #unavailable(macOS 27.0) else {
+            return
+        }
+        menuView?.layoutSubtreeIfNeeded()
+        guard let size = menuView?.frame.size, size.width > 1, size.height > 1 else {
+            return
+        }
+        pre27CompactPanelAwaitingLayout = false
+        positionExpandedPanel()
+        expandedPanel?.makeKeyAndOrderFront(nil)
     }
 
     func hideExpandedInterface(animated: Bool, force: Bool = false) {
@@ -219,29 +316,48 @@ class StatusBarItem: NSObject, NSMenuDelegate {
         SharedStore.ui.clearPinnedMenuProcesses()
         applyExpandedPanelPinChrome(pinned: false)
         removeExpandedInterfaceMonitors()
-        guard let panel = expandedPanel, panel.isVisible else {
+        if let panel = expandedPanel, panel.isVisible {
+            if animated {
+                let generation = expandedGeneration
+                NSAnimationContext.runAnimationGroup({ context in
+                    context.duration = 0.12
+                    panel.animator().alphaValue = 0
+                }, completionHandler: { [weak self] in
+                    // A new session may have begun mid-fade; only order out if it didn't.
+                    guard let self, self.expandedGeneration == generation else {
+                        return
+                    }
+                    self.finishHidingExpandedPanel(panel)
+                })
+            } else {
+                finishHidingExpandedPanel(panel)
+            }
+        }
+    }
+
+    private func finishHidingExpandedPanel(_ panel: StatusBarExpandedPanel) {
+        pre27CompactPanelAwaitingLayout = false
+        panel.orderOut(nil)
+        panel.alphaValue = 1
+    }
+
+    private func dismissUnpinnedDropdownPresentation() {
+        if #available(macOS 27.0, *) {
+            cancelExpandedInterfaceSession()
             return
         }
-        if animated {
-            let generation = expandedGeneration
-            NSAnimationContext.runAnimationGroup({ context in
-                context.duration = 0.12
-                panel.animator().alphaValue = 0
-            }, completionHandler: { [weak self] in
-                // A new session may have begun mid-fade; only order out if it didn't.
-                guard let self, self.expandedGeneration == generation else {
-                    return
-                }
-                panel.orderOut(nil)
-                panel.alphaValue = 1
-            })
-        } else {
-            panel.orderOut(nil)
+        if expandedPanel?.isVisible == true {
+            hideExpandedInterface(animated: true, force: false)
+            return
         }
+        statusBarMenu.cancelTracking()
     }
 
     func dismissMenuOrExpandedInterface() {
         cancelExpandedInterfaceSession()
+        if #unavailable(macOS 27.0), expandedPanel?.isVisible == true {
+            hideExpandedInterface(animated: false, force: true)
+        }
         statusBarMenu.cancelTracking()
     }
 
@@ -251,7 +367,7 @@ class StatusBarItem: NSObject, NSMenuDelegate {
         if SharedStore.ui.isStatusMenuPinned {
             return
         }
-        cancelExpandedInterfaceSession()
+        dismissUnpinnedDropdownPresentation()
     }
 
     /// Process-row 「置于顶部」: yield + activate while eul is still active, then end the session.
@@ -260,7 +376,13 @@ class StatusBarItem: NSObject, NSMenuDelegate {
         if SharedStore.ui.isStatusMenuPinned {
             return
         }
-        cancelExpandedInterfaceSession()
+        if #available(macOS 27.0, *) {
+            cancelExpandedInterfaceSession()
+        } else if expandedPanel?.isVisible == true {
+            hideExpandedInterface(animated: true, force: false)
+        } else {
+            statusBarMenu.cancelTracking()
+        }
     }
 
     private func beginExpandedDismissSuppression() {
@@ -308,7 +430,10 @@ class StatusBarItem: NSObject, NSMenuDelegate {
             guard let self, !self.shouldSuppressExpandedAutoDismiss() else {
                 return
             }
-            self.cancelExpandedInterfaceSession()
+            if SharedStore.ui.isStatusMenuPinned {
+                return
+            }
+            self.dismissExpandedMenuPresentation()
         }
         guard expandedResignKeyObserver == nil else {
             return
@@ -327,8 +452,22 @@ class StatusBarItem: NSObject, NSMenuDelegate {
                 if self.shouldSuppressExpandedAutoDismiss() {
                     return
                 }
-                self.cancelExpandedInterfaceSession()
+                if SharedStore.ui.isStatusMenuPinned {
+                    return
+                }
+                self.dismissExpandedMenuPresentation()
             }
+        }
+    }
+
+    /// End macOS 27 expanded session and/or hide a pre-27 pin panel.
+    private func dismissExpandedMenuPresentation(animated: Bool = true) {
+        if #available(macOS 27.0, *) {
+            cancelExpandedInterfaceSession()
+            return
+        }
+        if expandedPanel?.isVisible == true {
+            hideExpandedInterface(animated: animated, force: false)
         }
     }
 
@@ -339,6 +478,10 @@ class StatusBarItem: NSObject, NSMenuDelegate {
         let pointInWindow = panel.convertPoint(fromScreen: screenPoint)
         guard let contentView = panel.contentView else {
             return false
+        }
+        if let container = panel.contentView as? StatusBarCompactMenuPanelContainer {
+            let pointInContainer = container.convert(pointInWindow, from: nil)
+            return container.bounds.contains(pointInContainer)
         }
         let pointInContent = contentView.convert(pointInWindow, from: nil)
         return contentView.bounds.contains(pointInContent)
@@ -394,15 +537,13 @@ class StatusBarItem: NSObject, NSMenuDelegate {
             return
         }
         if isPointInStatusButton(location) {
-            // Second click on the status item toggles closed. The global tap
-            // cannot swallow the click, so stamp it: if the system begins a
-            // fresh session for this same click, showExpandedInterface ends
-            // it immediately instead of reopening.
-            lastToggleCancel = Date()
-            cancelExpandedInterfaceSession()
+            if #available(macOS 27.0, *) {
+                lastToggleCancel = Date()
+                dismissUnpinnedDropdownPresentation()
+            }
             return
         }
-        cancelExpandedInterfaceSession()
+        dismissUnpinnedDropdownPresentation()
     }
 
     private func isPointInStatusButton(_ location: NSPoint) -> Bool {
@@ -420,7 +561,7 @@ class StatusBarItem: NSObject, NSMenuDelegate {
             // Escape dismisses, like menu tracking.
             if event.keyCode == 53 {
                 hideExpandedInterface(animated: true, force: true)
-                cancelExpandedInterfaceSession()
+                dismissUnpinnedDropdownPresentation()
                 return nil
             }
             return event
@@ -436,16 +577,11 @@ class StatusBarItem: NSObject, NSMenuDelegate {
             return event
         }
         if isPointInStatusButton(NSEvent.mouseLocation) {
-            // Second click on the status item toggles closed. Swallow it so the
-            // system does not begin a fresh session on the same click.
-            cancelExpandedInterfaceSession()
+            dismissUnpinnedDropdownPresentation()
             return nil
         }
-        // Click in another eul window: dismiss but let the click through.
-        // Clicks in other apps never reach the local monitor; the
-        // didResignActive observer cancels the session for those.
-        cancelExpandedInterfaceSession()
-        return event
+        dismissUnpinnedDropdownPresentation()
+        return nil
     }
 
     private func checkStatusItemVisibility() {
@@ -476,19 +612,69 @@ class StatusBarItem: NSObject, NSMenuDelegate {
     }
 
     private func ensureExpandedPanel() {
-        guard expandedPanel == nil, let menuView = menuView else {
+        if #unavailable(macOS 27.0) {
+            return
+        }
+        guard let menuView = menuView else {
             return
         }
 
+        if let panel = expandedPanel {
+            attachMenuHostingViewToExpandedPanel(menuView, panel: panel, compactChrome: false)
+            return
+        }
+
+        let panel = makeEmptyExpandedPanel()
+        attachMenuHostingViewToExpandedPanel(menuView, panel: panel, compactChrome: false)
+        expandedPanel = panel
+        applyExpandedPanelPinChrome(pinned: false)
+        setAppearance(preferenceStore.appearanceMode.nsAppearance)
+    }
+
+    private func ensurePre27CompactPanel() {
+        guard let menuView else {
+            return
+        }
+
+        if let panel = expandedPanel {
+            attachCompactPinPanelContent(menuView, panel: panel)
+            return
+        }
+
+        let panel = makeEmptyExpandedPanel(compactMenuAppearance: true)
+        attachCompactPinPanelContent(menuView, panel: panel)
+        expandedPanel = panel
+        setAppearance(preferenceStore.appearanceMode.nsAppearance)
+    }
+
+    private func attachCompactPinPanelContent(_ hosting: NSHostingView<AnyView>, panel: StatusBarExpandedPanel) {
+        if let container = panel.contentView as? StatusBarCompactMenuPanelContainer,
+           container.hostingView === hosting
+        {
+            return
+        }
+        hosting.removeFromSuperview()
+        hosting.wantsLayer = true
+        hosting.layer?.backgroundColor = NSColor.clear.cgColor
+        hosting.layer?.masksToBounds = false
+        hosting.layer?.cornerRadius = 0
+        if let menuHosting = hosting as? StatusBarMenuHostingView<AnyView> {
+            menuHosting.usesExpandedPanelShell = false
+        }
+        panel.contentView = StatusBarCompactMenuPanelContainer(hostingView: hosting)
+    }
+
+    private func makeEmptyExpandedPanel(compactMenuAppearance: Bool = false) -> StatusBarExpandedPanel {
+        let initialHeight: CGFloat = compactMenuAppearance ? 1 : 100
         let panel = StatusBarExpandedPanel(
-            contentRect: NSRect(x: 0, y: 0, width: StatusMenuView.menuWidth, height: 100),
+            contentRect: NSRect(x: 0, y: 0, width: StatusMenuView.menuWidth, height: initialHeight),
             styleMask: [.borderless],
             backing: .buffered,
             defer: false
         )
         panel.isFloatingPanel = true
         panel.level = .popUpMenu
-        panel.hasShadow = false
+        panel.hasShadow = compactMenuAppearance
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
@@ -497,15 +683,23 @@ class StatusBarItem: NSObject, NSMenuDelegate {
         panel.autorecalculatesKeyViewLoop = true
         panel.isReleasedWhenClosed = false
         panel.isMovableByWindowBackground = false
+        return panel
+    }
+
+    private func attachMenuHostingViewToExpandedPanel(
+        _ menuView: NSHostingView<AnyView>,
+        panel: StatusBarExpandedPanel,
+        compactChrome: Bool
+    ) {
+        if panel.contentView === menuView {
+            return
+        }
         menuView.removeFromSuperview()
         menuView.wantsLayer = true
         menuView.layer?.backgroundColor = NSColor.clear.cgColor
         menuView.layer?.masksToBounds = true
-        menuView.layer?.cornerRadius = MenuChromeMetrics.shellCornerRadius
+        menuView.layer?.cornerRadius = compactChrome ? 0 : MenuChromeMetrics.shellCornerRadius
         panel.contentView = menuView
-        expandedPanel = panel
-        applyExpandedPanelPinChrome(pinned: false)
-        setAppearance(preferenceStore.appearanceMode.nsAppearance)
     }
 
     /// A pinned panel must not keep `.popUpMenu` level, or it covers every other app.
@@ -528,14 +722,18 @@ class StatusBarItem: NSObject, NSMenuDelegate {
     }
 
     private func positionExpandedPanel() {
-        guard let panel = expandedPanel, let hosting = menuView else {
+        guard let panel = expandedPanel, let hosting = panelHostingViewForLayout() else {
             return
         }
         let size = hosting.frame.size
         guard size.width > 1, size.height > 1 else {
             return
         }
-        if SharedStore.ui.isStatusMenuPinned {
+        if #unavailable(macOS 27.0) {
+            positionPre27CompactPanel(panel: panel, size: size)
+            return
+        }
+        if SharedStore.ui.isStatusMenuPinned, panel.isVisible {
             let frame = panel.frame
             panel.setFrame(
                 NSRect(x: frame.minX, y: frame.maxY - size.height, width: size.width, height: size.height),
@@ -548,7 +746,8 @@ class StatusBarItem: NSObject, NSMenuDelegate {
         }
 
         let buttonRect = buttonWindow.convertToScreen(button.convert(button.bounds, to: nil))
-        var origin = NSPoint(x: buttonRect.maxX - size.width, y: buttonRect.minY - size.height)
+        let anchorX = buttonRect.maxX - size.width
+        var origin = NSPoint(x: anchorX, y: buttonRect.minY - size.height)
         if let screen = buttonWindow.screen ?? NSScreen.main {
             let visible = screen.visibleFrame
             origin.x = min(max(origin.x, visible.minX + 4), visible.maxX - size.width - 4)
@@ -568,13 +767,69 @@ class StatusBarItem: NSObject, NSMenuDelegate {
         panel.setFrame(NSRect(origin: origin, size: size), display: true)
     }
 
+    /// Top edge at status-item bottom (`buttonRect.minY`); grow downward as SwiftUI height increases.
+    private func positionPre27CompactPanel(panel: StatusBarExpandedPanel, size: NSSize) {
+        guard let button = item.button, let buttonWindow = button.window else {
+            return
+        }
+        let buttonRect = buttonWindow.convertToScreen(button.convert(button.bounds, to: nil))
+        let topAnchorY: CGFloat
+        if SharedStore.ui.isStatusMenuPinned, panel.isVisible, panel.frame.height > 1 {
+            topAnchorY = panel.frame.maxY
+        } else {
+            topAnchorY = buttonRect.minY
+        }
+        var originX: CGFloat
+        if SharedStore.ui.isStatusMenuPinned, panel.isVisible {
+            originX = panel.frame.minX
+        } else {
+            originX = buttonRect.midX - size.width / 2
+        }
+        var originY = topAnchorY - size.height
+        if let screen = buttonWindow.screen ?? NSScreen.main {
+            let visible = screen.visibleFrame
+            originX = min(max(originX, visible.minX + 4), visible.maxX - size.width - 4)
+            if size.height >= visible.height {
+                originY = visible.maxY - size.height
+            } else if originY < visible.minY {
+                originY = visible.minY
+            } else if originY + size.height > visible.maxY {
+                originY = visible.maxY - size.height
+            }
+        }
+        panel.setFrame(NSRect(x: originX, y: originY, width: size.width, height: size.height), display: true)
+    }
+
+    private func panelHostingViewForLayout() -> NSHostingView<AnyView>? {
+        menuView
+    }
+
+    private func makeStatusMenuHostingView(
+        usesExpandedChrome: Bool,
+        usesNSMenuTracking: Bool,
+        onSizeChange: @escaping (CGSize) -> Void
+    ) -> StatusBarMenuHostingView<AnyView> {
+        guard let menuBuilder = config.menuBuilder else {
+            fatalError("StatusBarItem requires menuBuilder")
+        }
+        let view = StatusBarMenuHostingView(rootView: AnyView(
+            menuBuilder(onSizeChange)
+                .environment(\.statusMenuExpandedChrome, usesExpandedChrome)
+                .environment(\.statusMenuHeaderIconChrome, true)
+                .environment(\.statusMenuUsesNSMenuTracking, usesNSMenuTracking)
+        ))
+        view.usesExpandedPanelShell = usesExpandedChrome
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.setFrameSize(NSSize(width: StatusMenuView.menuWidth, height: 1))
+        return view
+    }
+
     init(named: String = "eul") {
         config = getStatusBarConfig()
         statusBarMenu = NSMenu()
         item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         super.init()
 
-        statusBarMenu.delegate = self
         // Allow Control Center / System Settings → Menu Bar to hide the extra.
         // autosaveName persists that choice across relaunch; do not overwrite isVisible here.
         item.behavior = .removalAllowed
@@ -584,31 +839,31 @@ class StatusBarItem: NSObject, NSMenuDelegate {
         }
 
         if let menuBuilder = config.menuBuilder {
-            let usesExpandedChrome: Bool
+            _ = menuBuilder
             if #available(macOS 27.0, *) {
-                usesExpandedChrome = true
-            } else {
-                usesExpandedChrome = false
-            }
-            menuView = StatusBarMenuHostingView(rootView: AnyView(
-                menuBuilder(onMenuSizeChange)
-                    .environment(\.statusMenuExpandedChrome, usesExpandedChrome)
-            ))
-            menuView?.translatesAutoresizingMaskIntoConstraints = false
-            menuView?.setFrameSize(NSSize(width: StatusMenuView.menuWidth, height: 1))
-
-            if #available(macOS 27.0, *) {
-                // Custom NSMenu tracking fights Full Keyboard Access. The same SwiftUI
-                // dropdown is shown as the system expanded interface instead.
+                menuView = makeStatusMenuHostingView(
+                    usesExpandedChrome: true,
+                    usesNSMenuTracking: false,
+                    onSizeChange: { [weak self] size in
+                        self?.onMenuSizeChange(size: size)
+                    }
+                )
                 let coordinator = StatusBarExpandedInterfaceCoordinator(owner: self)
                 expandedCoordinator = coordinator
                 item.expandedInterfaceDelegate = coordinator
                 ensureExpandedPanel()
             } else {
-                let customItem = NSMenuItem()
-                customItem.view = menuView
-                statusBarMenu.addItem(customItem)
-                item.menu = statusBarMenu
+                menuView = makeStatusMenuHostingView(
+                    usesExpandedChrome: false,
+                    usesNSMenuTracking: false,
+                    onSizeChange: { [weak self] size in
+                        self?.onMenuSizeChange(size: size)
+                    }
+                )
+                item.menu = nil
+                item.button?.target = self
+                item.button?.action = #selector(handlePre27StatusItemClick(_:))
+                item.button?.sendAction(on: [.leftMouseUp, .rightMouseUp])
             }
         } else {
             item.menu = statusBarMenu

@@ -11,6 +11,8 @@ import SwiftUI
 
 class StatusBarMenuHostingView<Content: View>: NSHostingView<Content> {
     override var isOpaque: Bool { false }
+    /// macOS 27 expanded-interface panel shell; pre–27 pin panel keeps compact (0 radius).
+    var usesExpandedPanelShell = false
 
     required init(rootView: Content) {
         super.init(rootView: rootView)
@@ -35,14 +37,18 @@ class StatusBarMenuHostingView<Content: View>: NSHostingView<Content> {
         wantsLayer = true
         layer?.masksToBounds = true
         if window is StatusBarExpandedPanel {
-            layer?.cornerRadius = MenuChromeMetrics.shellCornerRadius
+            layer?.cornerRadius = usesExpandedPanelShell ? MenuChromeMetrics.shellCornerRadius : 0
         } else {
             layer?.cornerRadius = 0
         }
         guard window?.isVisible == true else {
             return
         }
-        window?.becomeKey()
+        // Only the pin / expanded panel is ours to key; calling `becomeKey` on the
+        // system `NSMenu` window crashes on recent macOS releases.
+        if window is StatusBarExpandedPanel {
+            window?.becomeKey()
+        }
     }
 }
 
