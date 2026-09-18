@@ -153,7 +153,6 @@ class StatusBarItem: NSObject, NSMenuDelegate {
     }
 
     func menuWillOpen(_ menu: NSMenu) {
-        reattachMenuViewToStatusMenuIfNeeded()
         SharedStore.ui.menuWidth = menu.size.width
         SharedStore.ui.menuOpened = true
     }
@@ -241,14 +240,10 @@ class StatusBarItem: NSObject, NSMenuDelegate {
                 guard let self, self.expandedGeneration == generation else {
                     return
                 }
-                panel.orderOut(nil)
-                panel.alphaValue = 1
+                self.finishHidingExpandedPanel(panel)
             })
         } else {
-            panel.orderOut(nil)
-        }
-        if #unavailable(macOS 27.0) {
-            reattachMenuViewToStatusMenuIfNeeded()
+            finishHidingExpandedPanel(panel)
         }
     }
 
@@ -271,14 +266,22 @@ class StatusBarItem: NSObject, NSMenuDelegate {
         expandedPanel?.makeKeyAndOrderFront(nil)
     }
 
-    private func reattachMenuViewToStatusMenuIfNeeded() {
+    private func finishHidingExpandedPanel(_ panel: StatusBarExpandedPanel) {
+        panel.orderOut(nil)
+        panel.alphaValue = 1
+        reattachMenuViewFromPinPanelIfNeeded()
+    }
+
+    /// After pin-panel dismiss, move the hosting view back into the `NSMenu` item.
+    /// Never call while `NSMenu` is tracking — `NSMenuItem` does not own the view as its direct superview.
+    private func reattachMenuViewFromPinPanelIfNeeded() {
         guard #unavailable(macOS 27.0) else {
             return
         }
         guard let menuView = menuView, let customItem = statusMenuCustomItem else {
             return
         }
-        guard menuView.superview !== customItem else {
+        guard menuView.window is StatusBarExpandedPanel else {
             return
         }
         menuView.removeFromSuperview()

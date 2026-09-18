@@ -42,7 +42,11 @@ class StatusBarMenuHostingView<Content: View>: NSHostingView<Content> {
         guard window?.isVisible == true else {
             return
         }
-        window?.becomeKey()
+        // Only the pin / expanded panel is ours to key; calling `becomeKey` on the
+        // system `NSMenu` window crashes on recent macOS releases.
+        if window is StatusBarExpandedPanel {
+            window?.becomeKey()
+        }
     }
 }
 
