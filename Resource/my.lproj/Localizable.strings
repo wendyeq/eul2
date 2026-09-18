@@ -105,6 +105,10 @@
 "menu.show_cpu_top_activities" = "CPU top activities ကိုပြပါ";
 "menu.show_ram_top_activities" = "RAM top activities ကိုပြပါ";
 "menu.show_network_top_activities" = "network top activities ကိုပြပါ";
+"menu.show_quota_cursor" = "Show Cursor quota";
+"menu.show_quota_grok" = "Show Grok quota";
+"menu.show_quota_codex" = "Show Codex quota";
+"menu.quota_providers" = "Quota providers";
 
 // MARK: Temperature
 "temp.temperature" = "အပူချိန်";
@@ -141,6 +145,7 @@
 "component.network" = "ကွန်ယက်";
 "component.disk" = "ဒစ်က်";
 "component.bluetooth" = "ဘလူးတုသ်";
+"component.quota" = "Quota";
 
 // MARK: Process
 "process" = "လုပ်ငန်းစဉ်";
@@ -154,6 +159,26 @@
 
 // MARK: Bluetooth
 "bluetooth" = "ဘလူးတုသ်";
+
+
+// MARK: Quota
+"quota.cursor" = "Cursor";
+"quota.grok" = "Grok";
+"quota.cursor.auto" = "Auto";
+"quota.cursor.api" = "API";
+"quota.grok.credits" = "Credits";
+"quota.reset_in" = "Resets in %@";
+"quota.reset_soon" = "Resetting soon";
+"quota.window_elapsed" = "Elapsed %@";
+"quota.failed" = "Failed";
+"quota.cursor.sign_in" = "Sign in to Cursor";
+"quota.grok.sign_in" = "Run grok login";
+"quota.codex" = "Codex";
+"quota.codex.primary" = "5h";
+"quota.codex.weekly" = "Weekly";
+"quota.codex.daily" = "Daily";
+"quota.codex.monthly" = "Monthly";
+"quota.codex.sign_in" = "Run codex login";
 
 // MARK: Disk
 "disk.eject" = "ထုတ်မည်";
@@ -200,6 +225,7 @@
 "ui.refresh_rate" = "Refresh Rate";
 "ui.smc" = "SMC";
 "ui.network" = "ကွန်ယက်";
+"ui.quota" = "Quota";
 "ui.menu_view" = "ဇယား";
 "ui.empty" = "အလွတ်";
 "ui.hidden_by_system.title" = "eul status bar အစိတ်အပိုင်းများကို system မှပိတ်ထားပါသည်";

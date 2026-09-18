@@ -108,6 +108,10 @@ battery.timeRemaining = "Time Rem.";
 "menu.show_cpu_top_activities" = "CPU 상위 사용 앱 보여주기";
 "menu.show_ram_top_activities" = "Show RAM top activities";
 "menu.show_network_top_activities" = "네트워크 상위 사용 앱 보여주기";
+"menu.show_quota_cursor" = "Show Cursor quota";
+"menu.show_quota_grok" = "Show Grok quota";
+"menu.show_quota_codex" = "Show Codex quota";
+"menu.quota_providers" = "Quota providers";
 
 // MARK: Temperature
 "temp.temperature" = "온도";
@@ -144,6 +148,7 @@ battery.timeRemaining = "Time Rem.";
 "component.network" = "네트워크";
 "component.disk" = "디스크";
 "component.bluetooth" = "Bluetooth";
+"component.quota" = "할당량";
 
 // MARK: Process
 "process" = "프로세스";
@@ -157,6 +162,26 @@ battery.timeRemaining = "Time Rem.";
 
 // MARK: Bluetooth
 "bluetooth" = "Bluetooth";
+
+
+// MARK: Quota
+"quota.cursor" = "Cursor";
+"quota.grok" = "Grok";
+"quota.cursor.auto" = "Auto";
+"quota.cursor.api" = "API";
+"quota.grok.credits" = "Credits";
+"quota.reset_in" = "Resets in %@";
+"quota.reset_soon" = "Resetting soon";
+"quota.window_elapsed" = "Elapsed %@";
+"quota.failed" = "Failed";
+"quota.cursor.sign_in" = "Sign in to Cursor";
+"quota.grok.sign_in" = "Run grok login";
+"quota.codex" = "Codex";
+"quota.codex.primary" = "5h";
+"quota.codex.weekly" = "Weekly";
+"quota.codex.daily" = "Daily";
+"quota.codex.monthly" = "Monthly";
+"quota.codex.sign_in" = "Run codex login";
 
 // MARK: Disk
 "disk.eject" = "Eject";
@@ -204,6 +229,7 @@ battery.timeRemaining = "Time Rem.";
 "ui.refresh_rate" = "업데이트 주기";
 "ui.smc" = "SMC";
 "ui.network" = "네트워크";
+"ui.quota" = "할당량";
 "ui.menu_view" = "메뉴";
 "ui.empty" = "비어 있음";
 "ui.hidden_by_system.title" = "eul 상태바 컴포넌트가 시스템에 의해 가려짐";

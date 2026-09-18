@@ -95,6 +95,26 @@ Copyright © 2020 Gao Sun. All rights reserved.
 "network.boot.in" = "Nedladdat sedan start";
 "network.no_activity" = "Ingen aktivitet";
 
+
+// MARK: Quota
+"quota.cursor" = "Cursor";
+"quota.grok" = "Grok";
+"quota.cursor.auto" = "Auto";
+"quota.cursor.api" = "API";
+"quota.grok.credits" = "Credits";
+"quota.reset_in" = "Resets in %@";
+"quota.reset_soon" = "Resetting soon";
+"quota.window_elapsed" = "Elapsed %@";
+"quota.failed" = "Failed";
+"quota.cursor.sign_in" = "Sign in to Cursor";
+"quota.grok.sign_in" = "Run grok login";
+"quota.codex" = "Codex";
+"quota.codex.primary" = "5h";
+"quota.codex.weekly" = "Weekly";
+"quota.codex.daily" = "Daily";
+"quota.codex.monthly" = "Monthly";
+"quota.codex.sign_in" = "Run codex login";
+
 // MARK: Disk
 "disk.read" = "Läs";
 "disk.write" = "Skriv";
@@ -108,6 +128,10 @@ Copyright © 2020 Gao Sun. All rights reserved.
 "menu.show_cpu_top_activities" = "Visa CPUs toppaktiviteter";
 "menu.show_ram_top_activities" = "Show RAM top activities";
 "menu.show_network_top_activities" = "Visa nätverkets toppaktiviteter";
+"menu.show_quota_cursor" = "Show Cursor quota";
+"menu.show_quota_grok" = "Show Grok quota";
+"menu.show_quota_codex" = "Show Codex quota";
+"menu.quota_providers" = "Quota providers";
 
 // MARK: Temperature
 "temp.temperature" = "Temperatur";
@@ -187,6 +211,7 @@ Copyright © 2020 Gao Sun. All rights reserved.
 "ui.refresh_rate" = "Uppdateringshastighet";
 "ui.smc" = "SMC";
 "ui.network" = "Nätverk";
+"ui.quota" = "Kvot";
 "ui.menu_view" = "Menyvisning";
 "ui.empty" = "Tom";
 "ui.hidden_by_system.title" = "eul menyelement är dolda av systemet";
@@ -206,3 +231,4 @@ Copyright © 2020 Gao Sun. All rights reserved.
 "widget.network.description" = "Visa nätverksdetaljer";
 "widget.gpu.title" = "GPU Widget";
 "widget.gpu.description" = "Visa GPU-detaljer";
+"component.quota" = "Kvot";

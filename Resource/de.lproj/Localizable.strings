@@ -105,6 +105,10 @@
 "menu.show_cpu_top_activities" = "Top-CPU-Aktivitäten anzeigen";
 "menu.show_ram_top_activities" = "Top-RAM-Aktivitäten anzeigen";
 "menu.show_network_top_activities" = "Top-Netzwerk-Aktivitäten anzeigen";
+"menu.show_quota_cursor" = "Show Cursor quota";
+"menu.show_quota_grok" = "Show Grok quota";
+"menu.show_quota_codex" = "Show Codex quota";
+"menu.quota_providers" = "Quota providers";
 
 // MARK: Temperature
 "temp.temperature" = "Temperatur:";
@@ -141,6 +145,7 @@
 "component.network" = "Netzwerk";
 "component.disk" = "Festplatte";
 "component.bluetooth" = "Bluetooth";
+"component.quota" = "Kontingent";
 
 // MARK: Process
 "process" = "Prozess";
@@ -154,6 +159,26 @@
 
 // MARK: Bluetooth
 "bluetooth" = "Bluetooth";
+
+
+// MARK: Quota
+"quota.cursor" = "Cursor";
+"quota.grok" = "Grok";
+"quota.cursor.auto" = "Auto";
+"quota.cursor.api" = "API";
+"quota.grok.credits" = "Credits";
+"quota.reset_in" = "Resets in %@";
+"quota.reset_soon" = "Resetting soon";
+"quota.window_elapsed" = "Elapsed %@";
+"quota.failed" = "Failed";
+"quota.cursor.sign_in" = "Sign in to Cursor";
+"quota.grok.sign_in" = "Run grok login";
+"quota.codex" = "Codex";
+"quota.codex.primary" = "5h";
+"quota.codex.weekly" = "Weekly";
+"quota.codex.daily" = "Daily";
+"quota.codex.monthly" = "Monthly";
+"quota.codex.sign_in" = "Run codex login";
 
 // MARK: Disk
 "disk.eject" = "Eject";
@@ -201,6 +226,7 @@
 "ui.refresh_rate" = "Aktualisierungsrate";
 "ui.smc" = "SMC:";
 "ui.network" = "Netzwerk:";
+"ui.quota" = "Kontingent";
 "ui.menu_view" = "Menüansicht";
 "ui.empty" = "Leer";
 "ui.hidden_by_system.title" = "eul-Menüelemente werden vom System ausgeblendet";

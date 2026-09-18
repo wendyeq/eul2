@@ -57,6 +57,7 @@ struct MenuSectionHeader: View {
                 .frame(width: 13, height: 13)
         }
         .labelStyle(.titleAndIcon)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityAddTraits(.isHeader)
         .accessibilityLabel(title.localized())
     }

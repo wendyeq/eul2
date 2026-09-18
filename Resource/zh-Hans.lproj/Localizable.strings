@@ -107,6 +107,10 @@
 "menu.show_cpu_top_activities" = "展示 CPU 活跃进程";
 "menu.show_ram_top_activities" = "展示内存活跃进程";
 "menu.show_network_top_activities" = "展示网络活跃进程";
+"menu.show_quota_cursor" = "显示 Cursor";
+"menu.show_quota_grok" = "显示 Grok";
+"menu.show_quota_codex" = "显示 Codex";
+"menu.quota_providers" = "额度供应商";
 
 // MARK: Temperature
 "temp.temperature" = "温度";
@@ -143,6 +147,7 @@
 "component.network" = "网络";
 "component.disk" = "存储";
 "component.bluetooth" = "蓝牙";
+"component.quota" = "额度";
 
 // MARK: Process
 "process" = "进程";
@@ -159,6 +164,26 @@
 "bluetooth.left" = "左";
 "bluetooth.right" = "右";
 "bluetooth.case" = "充电盒";
+
+
+// MARK: Quota
+"quota.cursor" = "Cursor";
+"quota.grok" = "Grok";
+"quota.cursor.auto" = "主模型";
+"quota.cursor.api" = "API";
+"quota.grok.credits" = "周额度";
+"quota.reset_in" = "剩 %@";
+"quota.reset_soon" = "即将重置";
+"quota.window_elapsed" = "已过 %@";
+"quota.failed" = "失败";
+"quota.cursor.sign_in" = "请在 Cursor 中登录";
+"quota.grok.sign_in" = "请运行 grok login";
+"quota.codex" = "Codex";
+"quota.codex.primary" = "5 小时";
+"quota.codex.weekly" = "周额度";
+"quota.codex.daily" = "日额度";
+"quota.codex.monthly" = "月额度";
+"quota.codex.sign_in" = "请运行 codex login";
 
 // MARK: Disk
 "disk.eject" = "推出";
@@ -210,6 +235,7 @@
 "ui.refresh_rate" = "刷新频率";
 "ui.smc" = "SMC";
 "ui.network" = "网络";
+"ui.quota" = "额度";
 "ui.menu_view" = "菜单视图";
 "ui.empty" = "空";
 "ui.hidden_by_system.title" = "eul 状态栏组件被系统隐藏";
