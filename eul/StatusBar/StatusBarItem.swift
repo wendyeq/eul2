@@ -18,6 +18,31 @@ final class StatusBarExpandedPanel: NSPanel {
     override var canBecomeMain: Bool { false }
 }
 
+/// Pre–macOS 27 pin keep-open: continuous `.menu` material like `NSMenu`, not a clear floating panel.
+final class StatusBarCompactMenuPanelContainer: NSVisualEffectView {
+    let hostingView: NSView
+
+    init(hostingView: NSView) {
+        self.hostingView = hostingView
+        super.init(frame: .zero)
+        material = .menu
+        blendingMode = .behindWindow
+        state = .active
+        wantsLayer = true
+        addSubview(hostingView)
+    }
+
+    @available(*, unavailable)
+    required init?(coder _: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func layout() {
+        super.layout()
+        hostingView.frame = bounds
+    }
+}
+
 @available(macOS 27.0, *)
 private final class StatusBarExpandedInterfaceCoordinator: NSObject, NSStatusItemExpandedInterfaceDelegate {
     weak var owner: StatusBarItem?
@@ -470,6 +495,10 @@ class StatusBarItem: NSObject, NSMenuDelegate {
         guard let contentView = panel.contentView else {
             return false
         }
+        if let container = panel.contentView as? StatusBarCompactMenuPanelContainer {
+            let pointInContainer = container.convert(pointInWindow, from: nil)
+            return container.bounds.contains(pointInContainer)
+        }
         let pointInContent = contentView.convert(pointInWindow, from: nil)
         return contentView.bounds.contains(pointInContent)
     }
@@ -625,14 +654,31 @@ class StatusBarItem: NSObject, NSMenuDelegate {
         let hosting = ensurePre27PinPanelHostingView()
 
         if let panel = expandedPanel {
-            attachMenuHostingViewToExpandedPanel(hosting, panel: panel, compactChrome: true)
+            attachCompactPinPanelContent(hosting, panel: panel)
             return
         }
 
-        let panel = makeEmptyExpandedPanel()
-        attachMenuHostingViewToExpandedPanel(hosting, panel: panel, compactChrome: true)
+        let panel = makeEmptyExpandedPanel(compactMenuAppearance: true)
+        attachCompactPinPanelContent(hosting, panel: panel)
         expandedPanel = panel
         setAppearance(preferenceStore.appearanceMode.nsAppearance)
+    }
+
+    private func attachCompactPinPanelContent(_ hosting: NSHostingView<AnyView>, panel: StatusBarExpandedPanel) {
+        if let container = panel.contentView as? StatusBarCompactMenuPanelContainer,
+           container.hostingView === hosting
+        {
+            return
+        }
+        hosting.removeFromSuperview()
+        hosting.wantsLayer = true
+        hosting.layer?.backgroundColor = NSColor.clear.cgColor
+        hosting.layer?.masksToBounds = false
+        hosting.layer?.cornerRadius = 0
+        if let menuHosting = hosting as? StatusBarMenuHostingView<AnyView> {
+            menuHosting.usesExpandedPanelShell = false
+        }
+        panel.contentView = StatusBarCompactMenuPanelContainer(hostingView: hosting)
     }
 
     private func ensurePre27PinPanelHostingView() -> NSHostingView<AnyView> {
@@ -650,7 +696,7 @@ class StatusBarItem: NSObject, NSMenuDelegate {
         return view
     }
 
-    private func makeEmptyExpandedPanel() -> StatusBarExpandedPanel {
+    private func makeEmptyExpandedPanel(compactMenuAppearance: Bool = false) -> StatusBarExpandedPanel {
         let panel = StatusBarExpandedPanel(
             contentRect: NSRect(x: 0, y: 0, width: StatusMenuView.menuWidth, height: 100),
             styleMask: [.borderless],
@@ -659,7 +705,7 @@ class StatusBarItem: NSObject, NSMenuDelegate {
         )
         panel.isFloatingPanel = true
         panel.level = .popUpMenu
-        panel.hasShadow = false
+        panel.hasShadow = compactMenuAppearance
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
