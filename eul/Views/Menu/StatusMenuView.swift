@@ -19,6 +19,7 @@ struct StatusMenuView: SizeChangeView {
     @EnvironmentObject var uiStore: UIStore
     @Environment(\.statusMenuExpandedChrome) private var expandedChrome
     @Environment(\.statusMenuHeaderIconChrome) private var headerIconChrome
+    @Environment(\.statusMenuUsesNSMenuTracking) private var usesNSMenuTracking
 
     var onSizeChange: ((CGSize) -> Void)?
 
@@ -52,7 +53,7 @@ struct StatusMenuView: SizeChangeView {
                     Spacer()
                 }
                 .contentShape(Rectangle())
-                .pinnedHeaderWindowDrag(enabled: uiStore.isStatusMenuPinned)
+                .pinnedHeaderWindowDrag(enabled: uiStore.isStatusMenuPinned && !usesNSMenuTracking)
                 if headerIconChrome {
                     HStack(spacing: 8) {
                         MenuHeaderIconButton(
