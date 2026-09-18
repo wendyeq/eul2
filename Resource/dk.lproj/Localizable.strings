@@ -95,6 +95,26 @@
 "network.boot.in" = "Download siden start";
 "network.no_activity" = "ingen aktivitet";
 
+
+// MARK: Quota
+"quota.cursor" = "Cursor";
+"quota.grok" = "Grok";
+"quota.cursor.auto" = "Auto";
+"quota.cursor.api" = "API";
+"quota.grok.credits" = "Credits";
+"quota.reset_in" = "Resets in %@";
+"quota.reset_soon" = "Resetting soon";
+"quota.window_elapsed" = "Elapsed %@";
+"quota.failed" = "Failed";
+"quota.cursor.sign_in" = "Sign in to Cursor";
+"quota.grok.sign_in" = "Run grok login";
+"quota.codex" = "Codex";
+"quota.codex.primary" = "5h";
+"quota.codex.weekly" = "Weekly";
+"quota.codex.daily" = "Daily";
+"quota.codex.monthly" = "Monthly";
+"quota.codex.sign_in" = "Run codex login";
+
 // MARK: Disk
 "disk.read" = "Læs";
 "disk.write" = "Skriv";
@@ -107,6 +127,10 @@
 "menu.quit" = "forlade eul";
 "menu.show_cpu_top_activities" = "Vis CPU topaktiviteter";
 "menu.show_network_top_activities" = "Vis netværk topaktiviteter";
+"menu.show_quota_cursor" = "Show Cursor quota";
+"menu.show_quota_grok" = "Show Grok quota";
+"menu.show_quota_codex" = "Show Codex quota";
+"menu.quota_providers" = "Quota providers";
 
 // MARK: Temperature
 "temp.temperature" = "temperatur";
@@ -179,6 +203,7 @@
 "ui.refresh_rate" = "opdateringshastighed";
 "ui.smc" = "SMC";
 "ui.network" = "netværk";
+"ui.quota" = "Kvote";
 "ui.menu_view" = "menuvisning";
 "ui.empty" = "tom";
 "ui.hidden_by_system.title" = "eul menuelementer er skjult for systemet";
@@ -198,3 +223,4 @@
 "widget.network.description" = "Vis netværk-oplysninger";
 "widget.gpu.title" = "GPU Widget";
 "widget.gpu.description" = "Vis GPU-oplysninger";
+"component.quota" = "Kvote";

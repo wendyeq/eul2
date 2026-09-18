@@ -105,6 +105,10 @@
 "menu.show_cpu_top_activities" = "顯示 CPU 活躍程序";
 "menu.show_ram_top_activities" = "顯示記憶體活躍程序";
 "menu.show_network_top_activities" = "顯示網路活躍程序";
+"menu.show_quota_cursor" = "顯示 Cursor";
+"menu.show_quota_grok" = "顯示 Grok";
+"menu.show_quota_codex" = "顯示 Codex";
+"menu.quota_providers" = "額度供應商";
 
 // MARK: Temperature
 "temp.temperature" = "溫度";
@@ -141,6 +145,7 @@
 "component.network" = "網路";
 "component.disk" = "儲存空間";
 "component.bluetooth" = "藍牙";
+"component.quota" = "額度";
 
 // MARK: Process
 "process" = "程序";
@@ -154,6 +159,26 @@
 
 // MARK: Bluetooth
 "bluetooth" = "藍牙";
+
+
+// MARK: Quota
+"quota.cursor" = "Cursor";
+"quota.grok" = "Grok";
+"quota.cursor.auto" = "主模型";
+"quota.cursor.api" = "API";
+"quota.grok.credits" = "週額度";
+"quota.reset_in" = "剩 %@";
+"quota.reset_soon" = "即將重置";
+"quota.window_elapsed" = "已過 %@";
+"quota.failed" = "失敗";
+"quota.cursor.sign_in" = "請在 Cursor 中登入";
+"quota.grok.sign_in" = "請執行 grok login";
+"quota.codex" = "Codex";
+"quota.codex.primary" = "5 小時";
+"quota.codex.weekly" = "週額度";
+"quota.codex.daily" = "日額度";
+"quota.codex.monthly" = "月額度";
+"quota.codex.sign_in" = "請執行 codex login";
 
 // MARK: Disk
 "disk.eject" = "退出";
@@ -201,6 +226,7 @@
 "ui.refresh_rate" = "重新整理頻率";
 "ui.smc" = "SMC";
 "ui.network" = "網路";
+"ui.quota" = "額度";
 "ui.menu_view" = "選單檢視";
 "ui.empty" = "空";
 "ui.hidden_by_system.title" = "eul 狀態欄元件被系統隱藏";

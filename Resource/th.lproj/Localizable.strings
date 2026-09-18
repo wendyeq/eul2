@@ -105,6 +105,10 @@
 "menu.show_cpu_top_activities" = "แสดงกระบวนการที่มีกิจกรรมมากที่สุดของ CPU";
 "menu.show_ram_top_activities" = "แสดงกระบวนการที่มีกิจกรรมมากที่สุดของหน่วยความจำ";
 "menu.show_network_top_activities" = "แสดงกระบวนการที่มีกิจกรรมมากที่สุดของเครือข่าย";
+"menu.show_quota_cursor" = "Show Cursor quota";
+"menu.show_quota_grok" = "Show Grok quota";
+"menu.show_quota_codex" = "Show Codex quota";
+"menu.quota_providers" = "Quota providers";
 
 // MARK: Temperature
 "temp.temperature" = "อุณหภูมิ";
@@ -141,6 +145,7 @@
 "component.network" = "เครือข่าย";
 "component.disk" = "ดิสก์";
 "component.bluetooth" = "บลูทูธ";
+"component.quota" = "โควตา";
 
 // MARK: Process
 "process" = "กระบวนการ";
@@ -154,6 +159,26 @@
 
 // MARK: Bluetooth
 "bluetooth" = "บลูทูธ";
+
+
+// MARK: Quota
+"quota.cursor" = "Cursor";
+"quota.grok" = "Grok";
+"quota.cursor.auto" = "Auto";
+"quota.cursor.api" = "API";
+"quota.grok.credits" = "Credits";
+"quota.reset_in" = "Resets in %@";
+"quota.reset_soon" = "Resetting soon";
+"quota.window_elapsed" = "Elapsed %@";
+"quota.failed" = "Failed";
+"quota.cursor.sign_in" = "Sign in to Cursor";
+"quota.grok.sign_in" = "Run grok login";
+"quota.codex" = "Codex";
+"quota.codex.primary" = "5h";
+"quota.codex.weekly" = "Weekly";
+"quota.codex.daily" = "Daily";
+"quota.codex.monthly" = "Monthly";
+"quota.codex.sign_in" = "Run codex login";
 
 // MARK: Disk
 "disk.eject" = "เลิกเชื่อมต่อ";
@@ -201,6 +226,7 @@
 "ui.refresh_rate" = "อัพเดทความถี่";
 "ui.smc" = "SMC";
 "ui.network" = "เครือข่าย";
+"ui.quota" = "โควตา";
 "ui.menu_view" = "มุมมองเมนู";
 "ui.empty" = "ว่างเปล่า";
 "ui.hidden_by_system.title" = "ส่วนประกอบของ eul บนแถบเมนูสถานะถูกบังคับซ่อนโดยระบบ";

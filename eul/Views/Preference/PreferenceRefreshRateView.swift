@@ -28,10 +28,20 @@ extension Preference {
                 PreferenceFormPickerRow(
                     title: "ui.network".localized(),
                     selection: $preference.networkRefreshRate,
-                    showsDivider: false
+                    showsDivider: true
                 ) {
                     ForEach(allIntervals, id: \.self) {
                         Text("\($0)s")
+                            .tag($0)
+                    }
+                }
+                PreferenceFormPickerRow(
+                    title: "ui.quota".localized(),
+                    selection: $preference.quotaRefreshRate,
+                    showsDivider: false
+                ) {
+                    ForEach(QuotaStore.allowedRefreshMinutes, id: \.self) {
+                        Text("\($0)m")
                             .tag($0)
                     }
                 }

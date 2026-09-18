@@ -109,11 +109,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         isSleeping = false
         refreshSMCRepeatedly()
         refreshNetworkRepeatedly()
+        SharedStore.quota.resume()
         checkUpdateRepeatedly()
     }
 
     func sleep() {
         isSleeping = true
+        SharedStore.quota.pause()
     }
 
     func applicationWillTerminate(_: Notification) {

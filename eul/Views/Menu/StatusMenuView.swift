@@ -26,9 +26,20 @@ struct StatusMenuView: SizeChangeView {
         return max(180, visible - 120)
     }
 
+    private var visibleMenuComponents: [EulMenuComponent] {
+        menuComponentsStore.activeComponents.filter { component in
+            guard component == .Quota else {
+                return true
+            }
+            return preferenceStore.showCursorQuota
+                || preferenceStore.showGrokQuota
+                || preferenceStore.showCodexQuota
+        }
+    }
+
     @ViewBuilder
     private var menuComponentsStack: some View {
-        ForEach(Array(menuComponentsStore.activeComponents.enumerated()), id: \.element.id) { index, component in
+        ForEach(Array(visibleMenuComponents.enumerated()), id: \.element.id) { index, component in
             if index > 0 {
                 SeparatorView(menuSection: expandedChrome)
             }
@@ -87,7 +98,7 @@ struct StatusMenuView: SizeChangeView {
                 }
                 .frame(maxHeight: Self.expandedComponentsScrollCap())
             } else {
-                ForEach(Array(menuComponentsStore.activeComponents.enumerated()), id: \.element.id) { index, component in
+                ForEach(Array(visibleMenuComponents.enumerated()), id: \.element.id) { index, component in
                     if index > 0 {
                         SeparatorView(padding: 2)
                     }

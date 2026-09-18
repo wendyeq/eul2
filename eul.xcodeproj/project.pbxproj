@@ -53,6 +53,12 @@
 		6C2689182556774D00FB7306 /* Container.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C3813172554346A0025B97C /* Container.swift */; };
 		6C321FBD25B5C46B00BFED76 /* BluetoothStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C321FBC25B5C46B00BFED76 /* BluetoothStore.swift */; };
 		6C321FC025B5C8EF00BFED76 /* BluetoothMenuBlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C321FBF25B5C8EF00BFED76 /* BluetoothMenuBlockView.swift */; };
+		A5E2C00225BD7001000001 /* QuotaStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E2C00125BD7001000001 /* QuotaStore.swift */; };
+		A5E2C00425BD7001000001 /* QuotaMenuBlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E2C00325BD7001000001 /* QuotaMenuBlockView.swift */; };
+		A5E2C00625BD7001000001 /* QuotaSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E2C00525BD7001000001 /* QuotaSnapshot.swift */; };
+		A5E2C00825BD7001000001 /* CursorQuotaClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E2C00725BD7001000001 /* CursorQuotaClient.swift */; };
+		A5E2C00A25BD7001000001 /* GrokQuotaClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E2C00925BD7001000001 /* GrokQuotaClient.swift */; };
+		A5E2C00C25BD7001000001 /* CodexQuotaClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E2C00B25BD7001000001 /* CodexQuotaClient.swift */; };
 		6C321FC325BB12A600BFED76 /* BluetoothDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C321FC225BB12A600BFED76 /* BluetoothDevice.swift */; };
 		6C33CEC92517634400345977 /* StatusMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C33CEC82517634400345977 /* StatusMenuView.swift */; };
 		6C33CECD25177CE300345977 /* CpuMenuBlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C33CECC25177CE300345977 /* CpuMenuBlockView.swift */; };
@@ -427,6 +433,12 @@
 		6C2688F12556762B00FB7306 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		6C2F1647255C1EAD0062F76F /* pt */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = pt; path = pt.lproj/Localizable.strings; sourceTree = "<group>"; };
 		6C321FBC25B5C46B00BFED76 /* BluetoothStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothStore.swift; sourceTree = "<group>"; };
+		A5E2C00125BD7001000001 /* QuotaStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuotaStore.swift; sourceTree = "<group>"; };
+		A5E2C00325BD7001000001 /* QuotaMenuBlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuotaMenuBlockView.swift; sourceTree = "<group>"; };
+		A5E2C00525BD7001000001 /* QuotaSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuotaSnapshot.swift; sourceTree = "<group>"; };
+		A5E2C00725BD7001000001 /* CursorQuotaClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorQuotaClient.swift; sourceTree = "<group>"; };
+		A5E2C00925BD7001000001 /* GrokQuotaClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokQuotaClient.swift; sourceTree = "<group>"; };
+		A5E2C00B25BD7001000001 /* CodexQuotaClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexQuotaClient.swift; sourceTree = "<group>"; };
 		6C321FBF25B5C8EF00BFED76 /* BluetoothMenuBlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothMenuBlockView.swift; sourceTree = "<group>"; };
 		6C321FC225BB12A600BFED76 /* BluetoothDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothDevice.swift; sourceTree = "<group>"; };
 		6C33CEC82517634400345977 /* StatusMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusMenuView.swift; sourceTree = "<group>"; };
@@ -773,6 +785,7 @@
 				6CDE6C7324F0047600463114 /* SizeChangeView.swift */,
 				6CEF48A5255C366A002E4D73 /* SizePreferenceKey.swift */,
 				6C7DB6E724E82C7700133B06 /* StringEnum.swift */,
+				A5E2C00525BD7001000001 /* QuotaSnapshot.swift */,
 				6CC1EBB925769B4400BC05CA /* TemperatureData.swift */,
 				6C192539256FE4D6006B0D73 /* TextComponents */,
 				6C02718425C0717C006C54E6 /* Usage.swift */,
@@ -905,6 +918,9 @@
 				6CE1D1MPR10C12E8B00F5F47 /* MemoryVMPressure.swift */,
 				6CE1D1DVE10C12E8B00F5F47 /* DiskVolumeEject.swift */,
 				6C76846E25D1884A00E987BB /* AutoUpdate.swift */,
+				A5E2C00725BD7001000001 /* CursorQuotaClient.swift */,
+				A5E2C00925BD7001000001 /* GrokQuotaClient.swift */,
+				A5E2C00B25BD7001000001 /* CodexQuotaClient.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -1025,6 +1041,7 @@
 				6CEULNT02813A00133B061 /* NetworkTrafficAccumulator.swift */,
 				6C387DC6253B08F100CBB81B /* NetworkTopStore.swift */,
 				6C7DB6DB24E7FFE300133B06 /* PreferenceStore.swift */,
+				A5E2C00125BD7001000001 /* QuotaStore.swift */,
 				6C192532256D5984006B0D73 /* SharedStore.swift */,
 				6C457391253AC69E00BB2584 /* UIStore.swift */,
 				62F2125825BBF5B700642EE8 /* TopStore.swift */,
@@ -1068,6 +1085,7 @@
 				6C02716525BD56AE006C54E6 /* GpuMenuBlockView.swift */,
 				6C993B8B25178D3B00586C6B /* MemoryMenuBlockView.swift */,
 				6C387DC8253B1A8000CBB81B /* NetworkMenuBlockMenuView.swift */,
+				A5E2C00325BD7001000001 /* QuotaMenuBlockView.swift */,
 				6C33CEC82517634400345977 /* StatusMenuView.swift */,
 			);
 			path = Menu;
@@ -1565,6 +1583,12 @@
 				62F2125925BBF5B700642EE8 /* TopStore.swift in Sources */,
 				6C1FA40E24AA162800CA7F71 /* Refreshable.swift in Sources */,
 				6C321FBD25B5C46B00BFED76 /* BluetoothStore.swift in Sources */,
+				A5E2C00225BD7001000001 /* QuotaStore.swift in Sources */,
+				A5E2C00425BD7001000001 /* QuotaMenuBlockView.swift in Sources */,
+				A5E2C00625BD7001000001 /* QuotaSnapshot.swift in Sources */,
+				A5E2C00825BD7001000001 /* CursorQuotaClient.swift in Sources */,
+				A5E2C00A25BD7001000001 /* GrokQuotaClient.swift in Sources */,
+				A5E2C00C25BD7001000001 /* CodexQuotaClient.swift in Sources */,
 				6C572D7F254EFD4700EF9904 /* DiskStore.swift in Sources */,
 				6C321FC025B5C8EF00BFED76 /* BluetoothMenuBlockView.swift in Sources */,
 				6CFAB7FC25BC12E1002F5F48 /* MenuInfoView.swift in Sources */,

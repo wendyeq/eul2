@@ -56,10 +56,15 @@ class PreferenceStore: ObservableObject {
     @Published var fontDesign: Preference.FontDesign = .default
     @Published var smcRefreshRate = 3
     @Published var networkRefreshRate = 3
+    @Published var quotaRefreshRate = 1
     @Published var showIcon = true
     @Published var showCPUTopActivities = true
     @Published var showRAMTopActivities = false
     @Published var showNetworkTopActivities = false
+    @Published var showCursorQuota = true
+    @Published var showGrokQuota = true
+    @Published var showCodexQuota = true
+    @Published var quotaProviderOrder: [String] = Preference.QuotaProvider.defaultOrder.map(\.rawValue)
     @Published var cpuMenuDisplay: Preference.CpuMenuDisplay = .usagePercentage
     @Published var checkStatusItemVisibility = true
     @Published var upgradeMethod = UpgradeMethod.showInStatusBar
@@ -75,10 +80,15 @@ class PreferenceStore: ObservableObject {
             "fontDesign": fontDesign.rawValue,
             "smcRefreshRate": smcRefreshRate,
             "networkRefreshRate": networkRefreshRate,
+            "quotaRefreshRate": quotaRefreshRate,
             "showIcon": showIcon,
             "showCPUTopActivities": showCPUTopActivities,
             "showRAMTopActivities": showRAMTopActivities,
             "showNetworkTopActivities": showNetworkTopActivities,
+            "showCursorQuota": showCursorQuota,
+            "showGrokQuota": showGrokQuota,
+            "showCodexQuota": showCodexQuota,
+            "quotaProviderOrder": orderedQuotaProviders.map(\.rawValue),
             "cpuMenuDisplay": cpuMenuDisplay.rawValue,
             "checkStatusItemVisibility": checkStatusItemVisibility,
             "appearance": appearanceMode.rawValue,
@@ -97,6 +107,53 @@ class PreferenceStore: ObservableObject {
                 self.writeToContainer()
             }
         }
+    }
+
+    var orderedQuotaProviders: [Preference.QuotaProvider] {
+        Self.normalizedQuotaOrder(quotaProviderOrder.compactMap(Preference.QuotaProvider.init(rawValue:)))
+    }
+
+    func isQuotaProviderVisible(_ provider: Preference.QuotaProvider) -> Bool {
+        switch provider {
+        case .cursor:
+            return showCursorQuota
+        case .grok:
+            return showGrokQuota
+        case .codex:
+            return showCodexQuota
+        }
+    }
+
+    func setQuotaProviderVisible(_ provider: Preference.QuotaProvider, visible: Bool) {
+        switch provider {
+        case .cursor:
+            showCursorQuota = visible
+        case .grok:
+            showGrokQuota = visible
+        case .codex:
+            showCodexQuota = visible
+        }
+    }
+
+    func moveQuotaProvider(from offset: Int, to destination: Int) {
+        var order = orderedQuotaProviders
+        guard order.indices.contains(offset), order.indices.contains(destination), offset != destination else {
+            return
+        }
+        let item = order.remove(at: offset)
+        order.insert(item, at: destination)
+        quotaProviderOrder = order.map(\.rawValue)
+    }
+
+    private static func normalizedQuotaOrder(_ input: [Preference.QuotaProvider]) -> [Preference.QuotaProvider] {
+        var result: [Preference.QuotaProvider] = []
+        for provider in input where !result.contains(provider) {
+            result.append(provider)
+        }
+        for provider in Preference.QuotaProvider.defaultOrder where !result.contains(provider) {
+            result.append(provider)
+        }
+        return result
     }
 
     func checkUpdate() {
@@ -160,6 +217,9 @@ class PreferenceStore: ObservableObject {
                 if let value = data["networkRefreshRate"].int {
                     networkRefreshRate = value
                 }
+                if let value = data["quotaRefreshRate"].int, QuotaStore.allowedRefreshMinutes.contains(value) {
+                    quotaRefreshRate = value
+                }
                 if let value = data["showCPUTopActivities"].bool {
                     showCPUTopActivities = value
                 }
@@ -168,6 +228,21 @@ class PreferenceStore: ObservableObject {
                 }
                 if let value = data["showNetworkTopActivities"].bool {
                     showNetworkTopActivities = value
+                }
+                if let value = data["showCursorQuota"].bool {
+                    showCursorQuota = value
+                }
+                if let value = data["showGrokQuota"].bool {
+                    showGrokQuota = value
+                }
+                if let value = data["showCodexQuota"].bool {
+                    showCodexQuota = value
+                }
+                if let rawOrder = data["quotaProviderOrder"].array {
+                    let parsed = rawOrder.compactMap { Preference.QuotaProvider(rawValue: $0.stringValue) }
+                    if !parsed.isEmpty {
+                        quotaProviderOrder = Self.normalizedQuotaOrder(parsed).map(\.rawValue)
+                    }
                 }
                 if let raw = data["cpuMenuDisplay"].string, let value = Preference.CpuMenuDisplay(rawValue: raw) {
                     cpuMenuDisplay = value

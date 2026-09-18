@@ -105,6 +105,10 @@
 "menu.show_cpu_top_activities" = "CPU ихээр ашиглаж буй";
 "menu.show_ram_top_activities" = "Show RAM top activities";
 "menu.show_network_top_activities" = "Сүлжээ ихээр ашиглаж буй";
+"menu.show_quota_cursor" = "Show Cursor quota";
+"menu.show_quota_grok" = "Show Grok quota";
+"menu.show_quota_codex" = "Show Codex quota";
+"menu.quota_providers" = "Quota providers";
 
 // MARK: Temperature
 "temp.temperature" = "Температур";
@@ -141,6 +145,7 @@
 "component.network" = "Сүлжээ";
 "component.disk" = "Диск";
 "component.bluetooth" = "Bluetooth";
+"component.quota" = "Хязгаар";
 
 // MARK: Process
 "process" = "Процесс";
@@ -154,6 +159,26 @@
 
 // MARK: Bluetooth
 "bluetooth" = "Bluetooth";
+
+
+// MARK: Quota
+"quota.cursor" = "Cursor";
+"quota.grok" = "Grok";
+"quota.cursor.auto" = "Auto";
+"quota.cursor.api" = "API";
+"quota.grok.credits" = "Credits";
+"quota.reset_in" = "Resets in %@";
+"quota.reset_soon" = "Resetting soon";
+"quota.window_elapsed" = "Elapsed %@";
+"quota.failed" = "Failed";
+"quota.cursor.sign_in" = "Sign in to Cursor";
+"quota.grok.sign_in" = "Run grok login";
+"quota.codex" = "Codex";
+"quota.codex.primary" = "5h";
+"quota.codex.weekly" = "Weekly";
+"quota.codex.daily" = "Daily";
+"quota.codex.monthly" = "Monthly";
+"quota.codex.sign_in" = "Run codex login";
 
 // MARK: Disk
 "disk.eject" = "Eject";
@@ -202,6 +227,7 @@
 "ui.refresh_rate" = "Шинэчлэх хугацаа";
 "ui.smc" = "СМК";
 "ui.network" = "Сүлжээ";
+"ui.quota" = "Хязгаар";
 "ui.menu_view" = "Мэню";
 "ui.empty" = "Хоосон";
 "ui.hidden_by_system.title" = "eul статус мөрний нэгжүүдийг системээс хориглож байна";

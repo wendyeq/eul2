@@ -91,4 +91,22 @@ struct Preference {
             }
         }
     }
+
+    enum QuotaProvider: String, CaseIterable, Identifiable {
+        case cursor
+        case grok
+        case codex
+
+        var id: String { rawValue }
+
+        static let defaultOrder: [QuotaProvider] = [.cursor, .grok, .codex]
+
+        var titleKey: String {
+            "quota.\(rawValue)"
+        }
+
+        var signInKey: String {
+            "quota.\(rawValue).sign_in"
+        }
+    }
 }
