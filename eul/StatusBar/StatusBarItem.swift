@@ -89,6 +89,8 @@ class StatusBarItem: NSObject, NSMenuDelegate {
     private var extraLayoutGeneration = 0
     /// Pre–macOS 27: defer `orderFront` until SwiftUI reports real height (avoids 100pt placeholder frame).
     private var pre27CompactPanelAwaitingLayout = false
+    private var pre27CompactPanelPlacementAttempts = 0
+    private static let pre27CompactPanelMaxPlacementAttempts = 24
 
     /// Called when AppKit updates `NSStatusItem.isVisible` (Control Center, menu-bar settings, or in-app toggle).
     var onVisibilityChange: ((Bool) -> Void)?
@@ -161,17 +163,31 @@ class StatusBarItem: NSObject, NSMenuDelegate {
         SharedStore.ui.menuWidth = size.width
         menuView?.setFrameSize(NSSize(width: size.width, height: size.height))
         if #unavailable(macOS 27.0) {
-            if expandedPanel != nil, size.height > 1, size.width > 1 {
-                positionExpandedPanel()
-            }
-            if pre27CompactPanelAwaitingLayout, size.height > 1, size.width > 1 {
-                pre27CompactPanelAwaitingLayout = false
-                expandedPanel?.makeKeyAndOrderFront(nil)
-            }
+            handlePre27CompactPanelLayoutUpdate()
             return
         }
         if expandedPanel?.isVisible == true {
             positionExpandedPanel()
+        }
+    }
+
+    private func handlePre27CompactPanelLayoutUpdate() {
+        guard let panel = expandedPanel else {
+            return
+        }
+        guard let size = menuView?.frame.size, size.width > 1, size.height > 1 else {
+            if pre27CompactPanelAwaitingLayout {
+                schedulePre27CompactPanelPresentationRetry()
+            }
+            return
+        }
+        let positioned = positionPre27CompactPanel(panel: panel, size: size)
+        if pre27CompactPanelAwaitingLayout {
+            if positioned {
+                completePre27CompactPanelPresentation()
+            } else {
+                schedulePre27CompactPanelPresentationRetry()
+            }
         }
     }
 
@@ -291,19 +307,35 @@ class StatusBarItem: NSObject, NSMenuDelegate {
         installExpandedInterfaceMonitors()
         beginExpandedDismissSuppression()
         expandedPanel?.alphaValue = 1
-        revealPre27CompactPanelIfLayoutReady()
+        pre27CompactPanelPlacementAttempts = 0
+        attemptPre27CompactPanelPresentation()
     }
 
-    private func revealPre27CompactPanelIfLayoutReady() {
+    private func attemptPre27CompactPanelPresentation() {
         guard #unavailable(macOS 27.0) else {
             return
         }
         menuView?.layoutSubtreeIfNeeded()
-        guard let size = menuView?.frame.size, size.width > 1, size.height > 1 else {
+        item.button?.window?.layoutIfNeeded()
+        handlePre27CompactPanelLayoutUpdate()
+    }
+
+    private func schedulePre27CompactPanelPresentationRetry() {
+        guard pre27CompactPanelAwaitingLayout else {
             return
         }
+        guard pre27CompactPanelPlacementAttempts < Self.pre27CompactPanelMaxPlacementAttempts else {
+            return
+        }
+        pre27CompactPanelPlacementAttempts += 1
+        DispatchQueue.main.async { [weak self] in
+            self?.attemptPre27CompactPanelPresentation()
+        }
+    }
+
+    private func completePre27CompactPanelPresentation() {
         pre27CompactPanelAwaitingLayout = false
-        positionExpandedPanel()
+        pre27CompactPanelPlacementAttempts = 0
         expandedPanel?.makeKeyAndOrderFront(nil)
     }
 
@@ -337,6 +369,7 @@ class StatusBarItem: NSObject, NSMenuDelegate {
 
     private func finishHidingExpandedPanel(_ panel: StatusBarExpandedPanel) {
         pre27CompactPanelAwaitingLayout = false
+        pre27CompactPanelPlacementAttempts = 0
         panel.orderOut(nil)
         panel.alphaValue = 1
     }
@@ -730,7 +763,10 @@ class StatusBarItem: NSObject, NSMenuDelegate {
             return
         }
         if #unavailable(macOS 27.0) {
-            positionPre27CompactPanel(panel: panel, size: size)
+            guard let panel = expandedPanel else {
+                return
+            }
+            _ = positionPre27CompactPanel(panel: panel, size: size)
             return
         }
         if SharedStore.ui.isStatusMenuPinned, panel.isVisible {
@@ -768,11 +804,13 @@ class StatusBarItem: NSObject, NSMenuDelegate {
     }
 
     /// Top edge at status-item bottom (`buttonRect.minY`); grow downward as SwiftUI height increases.
-    private func positionPre27CompactPanel(panel: StatusBarExpandedPanel, size: NSSize) {
-        guard let button = item.button, let buttonWindow = button.window else {
-            return
+    @discardableResult
+    private func positionPre27CompactPanel(panel: StatusBarExpandedPanel, size: NSSize) -> Bool {
+        guard let placement = statusItemButtonScreenPlacement() else {
+            return false
         }
-        let buttonRect = buttonWindow.convertToScreen(button.convert(button.bounds, to: nil))
+        let buttonRect = placement.rect
+        let visible = placement.visibleFrame
         let topAnchorY: CGFloat
         if SharedStore.ui.isStatusMenuPinned, panel.isVisible, panel.frame.height > 1 {
             topAnchorY = panel.frame.maxY
@@ -786,18 +824,48 @@ class StatusBarItem: NSObject, NSMenuDelegate {
             originX = buttonRect.midX - size.width / 2
         }
         var originY = topAnchorY - size.height
-        if let screen = buttonWindow.screen ?? NSScreen.main {
-            let visible = screen.visibleFrame
-            originX = min(max(originX, visible.minX + 4), visible.maxX - size.width - 4)
-            if size.height >= visible.height {
-                originY = visible.maxY - size.height
-            } else if originY < visible.minY {
-                originY = visible.minY
-            } else if originY + size.height > visible.maxY {
-                originY = visible.maxY - size.height
-            }
+        originX = min(max(originX, visible.minX + 4), visible.maxX - size.width - 4)
+        if size.height >= visible.height {
+            originY = visible.maxY - size.height
+        } else if originY < visible.minY {
+            originY = visible.minY
+        } else if originY + size.height > visible.maxY {
+            originY = visible.maxY - size.height
         }
         panel.setFrame(NSRect(x: originX, y: originY, width: size.width, height: size.height), display: true)
+        return true
+    }
+
+    /// Rejects unset status-item geometry (nil window, zero bounds, implausible width) before clamping to screen edges.
+    private func statusItemButtonScreenPlacement() -> (rect: NSRect, visibleFrame: NSRect)? {
+        guard let button = item.button, let buttonWindow = button.window else {
+            return nil
+        }
+        guard buttonWindow.isVisible, buttonWindow.screen != nil else {
+            return nil
+        }
+        let localBounds = button.bounds
+        guard localBounds.width > 0.5, localBounds.height > 0.5 else {
+            return nil
+        }
+        let rect = buttonWindow.convertToScreen(button.convert(localBounds, to: nil))
+        guard rect.width > 0.5, rect.height > 0.5, rect.midX.isFinite, rect.minY.isFinite else {
+            return nil
+        }
+        guard rect.width <= Self.maxFittingStatusItemWidth + 48 else {
+            return nil
+        }
+        guard let screen = buttonWindow.screen ?? NSScreen.main else {
+            return nil
+        }
+        let visible = screen.visibleFrame
+        guard rect.midX >= visible.minX - 80, rect.midX <= visible.maxX + 80 else {
+            return nil
+        }
+        guard rect.maxY >= visible.minY, rect.maxY <= visible.maxY + 80 else {
+            return nil
+        }
+        return (rect, visible)
     }
 
     private func panelHostingViewForLayout() -> NSHostingView<AnyView>? {
