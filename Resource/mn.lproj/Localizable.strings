@@ -1,0 +1,257 @@
+/*
+  Localizable.strings
+  eul
+
+  Created by Gao Sun on 2020/9/12.
+  Copyright © 2020 Gao Sun. All rights reserved.
+*/
+
+// MARK: Battery
+"battery" = "Батaрей";
+"battery.charge" = "Цэнэг";
+"battery.time_remaining" = "Time Rem.";
+"battery.power_source" = "Эх үүсвэр";
+"battery.power_source.battery" = "Батарей";
+"battery.power_source.acPower" = "Цэнэглэгч";
+"battery.power_source.unknown" = "Үл мэдэх";
+"battery.is_charging" = "Цэнэглэж буй";
+"battery.to_full_charge" = "бүрэн цэнэг авахад";
+"battery.to_empty" = "дуусахад";
+"battery.health" = "Байдал";
+"battery.max_capacity" = "Чадамж.";
+"battery.design_capacity" = "Тогтоогдсон.";
+"battery.health_percentage" = "Байдал Хувиар";
+"battery.cycle_count" = "Насжилт тоо";
+"battery.cycle" = "Насжилт";
+"battery.condition" = "Нөхцөлт";
+"battery.condition.good" = "Сайн";
+"battery.condition.fair" = "Дунд";
+"battery.condition.poor" = "Муу";
+
+// MARK: CPU / Info
+"cpu.usage" = "Хэрэглээ";
+"cpu.idle" = "Сул";
+"cpu.temperature" = "Хэм";
+"gpu.temperature" = "GPU Хэм";
+"cpu.info" = "Мэдээлэл";
+"cpu.physical_cores" = "Бодит цөм";
+"cpu.logical_cores" = "Логик цөм";
+"cpu.up_time" = "Асаалттай";
+"cpu.thermal_level" = "Thermal Lv.";
+"cpu.system" = "Систем";
+"cpu.user" = "Хэрэглэгч";
+"cpu.nice" = "Nice";
+"cpu.waiting_status_report" = "Эхний мэдэгдлийг хүлээж байна";
+"power.system" = "Нийт";
+"power.cpu" = "CPU";
+"power.gpu.short" = "Чад";
+"gpu.cores.unit" = "цөм";
+"gpu.unified_memory.short" = "UM";
+"gpu.usage" = "Хэрэглээ";
+"gpu.clock.core" = "Цөм";
+"gpu.clock.memory" = "Mem";
+"temp.palm_rest" = "Алга";
+"temp.enclosure" = "Хайрцаг";
+"temp.ssd" = "SSD";
+"temp.wifi" = "Wi-Fi";
+"cpu.cluster.e" = "E-цөм";
+"cpu.cluster.p" = "P-цөм";
+"cpu.throttle" = "Хязгаар";
+"cpu.throttle.value" = "%d%%";
+"ane.title" = "ANE";
+"ane.active" = "Идэвхтэй";
+"ane.idle" = "Сул";
+"memory.bandwidth.estimate" = "Суваг";
+
+// MARK: Fan
+"fan" = "Сэнс";
+"fan.current" = "Одоо";
+"fan.min" = "Бага";
+"fan.max" = "Их";
+
+// MARK: Memory
+"memory" = "Санах ой";
+"memory.total" = "Нийт";
+"memory.free" = "Сул";
+"memory.cached_files" = "Кэш-д буй";
+"memory.temp" = "Хэм";
+"memory.usage" = "Хэрэглээ";
+"memory.app" = "Апп";
+"memory.wired" = "ҮС-ийн";
+"memory.compressed" = "Шахагдсан";
+"memory.pressure" = "Даралт";
+"memory.pressure.normal" = "Хэвийн";
+"memory.pressure.warning" = "Анхааруулга";
+"memory.pressure.critical" = "Эрсдэлтэй";
+
+// MARK: Network
+"network" = "Сүлжээ";
+"network.in" = "Оролт";
+"network.out" = "Гаралт";
+"network.today.out" = "Өнөөдрийн илгээлт";
+"network.today.in" = "Өнөөдрийн таталт";
+"network.boot.out" = "Асаалтаас хойш илгээлт";
+"network.boot.in" = "Асаалтаас хойш таталт";
+"network.no_activity" = "Идэвхигүй";
+"network.port.auto" = "Auto-detect";
+"network.port.select" = "Port";
+
+// MARK: Menu
+"menu.summary" = "Summary";
+"menu.yes" = "Тийм";
+"menu.no" = "Үгүй";
+"menu.preferences" = "Тохиргоо";
+"menu.quit" = "eul -г гаргах";
+"menu.show_cpu_top_activities" = "CPU ихээр ашиглаж буй";
+"menu.show_ram_top_activities" = "Show RAM top activities";
+"menu.show_network_top_activities" = "Сүлжээ ихээр ашиглаж буй";
+
+// MARK: Temperature
+"temp.temperature" = "Температур";
+"temp.celsius" = "цельс";
+"temp.fahrenheit" = "фаренгейт";
+"temp.kelvin" = "кельвин";
+
+// MARK: Text Display
+"text_display" = "Харагдац текст";
+"text_display.compact" = "шахсан";
+"text_display.single_line" = "нэг мөрөнд";
+
+// MARK: Font Design
+"font_design" = "Фонт хэв";
+"font_design.default" = "өгөгдмөл";
+"font_design.monospaced" = "monospaced";
+
+// MARK: Appearance
+"appearance.mode" = "Appearance";
+"appearance.light" = "light";
+"appearance.dark" = "dark";
+"appearance.auto" = "auto";
+
+// MARK: Component
+"component.status_bar" = "Статус мөр";
+"component.drag_to_reorder" = "чирээд зөөнө";
+"component.available" = "Боломжит";
+"component.click_to_append" = "нэгтгэх";
+"component.cpu" = "CPU";
+"component.gpu" = "GPU";
+"component.fan" = "Сэнс";
+"component.memory" = "Санах ой";
+"component.battery" = "Батaрей";
+"component.network" = "Сүлжээ";
+"component.disk" = "Диск";
+"component.bluetooth" = "Bluetooth";
+
+// MARK: Process
+"process" = "Процесс";
+"process.bring_to_front" = "Нааш нь гаргах";
+"process.reveal_in_finder" = "Файндэрт нээх";
+"process.terminate" = "Зогсоох";
+"process.force_terminate" = "Хүчээр зогсоох";
+"process.terminate_alert.text.%@" = "%@ зогсоохдоо итгэлтэй байна уу?";
+"process.terminate_alert.command.%@" = "Команд: %@";
+"process.terminate_alert.cancel" = "Цуцлах";
+
+// MARK: Bluetooth
+"bluetooth" = "Bluetooth";
+
+// MARK: Disk
+"disk.eject" = "Eject";
+"disk.select" = "Select disk";
+"disk.all" = "All Disks";
+"disk.read" = "Унших";
+"disk.write" = "Бичих";
+
+// MARK: Language
+"language" = "Хэл";
+"language.ar" = "العربية";
+"language.en" = "English";
+"language.zh-Hans" = "简体中文";
+"language.zh-Hant" = "繁體中文";
+"language.de" = "Deutsch";
+"language.ru" = "Русский";
+"language.es" = "Español";
+"language.pt" = "Português";
+"language.ja" = "日本語";
+"language.fr" = "Français";
+"language.mn" = "Монгол";
+"language.ko" = "한국어";
+"language.dk" = "Dansk";
+"language.uk" = "Українська";
+"language.se" = "Svenska";
+"language.cs" = "Čeština";
+"language.it" = "Italiano";
+"language.my" = "မြန်မာဘာသာ";
+"language.hu" = "Magyar";
+"language.th" = "ไทย";
+"language.tr" = "Türkçe";
+
+// MARK: General UI
+"ui.app" = "Апп";
+"ui.general" = "Ерөнхий";
+"ui.version" = "хувилбар";
+"ui.checking_update" = "шинэчлэл шалгаж байна";
+"ui.up_to_date" = "сүүлийн хувилбар";
+"ui.new_version" = "шинэ хувилбар гарсан байна";
+"ui.download" = "татах";
+"ui.launch_at_login" = "Нэвтрэхэд ачааллуул";
+"ui.display" = "Харагдац";
+"ui.components" = "Нэгжүүд";
+"ui.show_components_in_status_bar" = "Статус мөрөнд нэгжүүдийг харах";
+"ui.show_icon" = "Аякон харах";
+"ui.refresh_rate" = "Шинэчлэх хугацаа";
+"ui.smc" = "СМК";
+"ui.network" = "Сүлжээ";
+"ui.menu_view" = "Мэню";
+"ui.empty" = "Хоосон";
+"ui.hidden_by_system.title" = "eul статус мөрний нэгжүүдийг системээс хориглож байна";
+"ui.hidden_by_system.message" = "Тохиргоог нээж, нэгжүүдийг багасгана уу";
+"ui.hidden_by_system.open" = "Нээх";
+"ui.hidden_by_system.dismiss" = "Цуцлах";
+"ui.check_status_item_visibility" = "Check status item visibility";
+"ui.upgrade_method" = "Upgrade";
+"ui.upgrade_method.none" = "none";
+"ui.upgrade_method.none.description" = "eul will not check upgrade";
+"ui.upgrade_method.showInStatusBar" = "show in status bar";
+"ui.upgrade_method.showInStatusBar.description" = "Show upgrade icon when new version available";
+"ui.upgrade_method.autoUpdate" = "auto update";
+"ui.upgrade_method.autoUpdate.description" = "Perform upgrade automatically";
+
+// MARK: Component
+"component.show_icon" = "Аякон харах";
+"component.show_graph" = "Show graph";
+"component.show_text" = "Show text";
+
+// MARK: Text Component
+"text_component.free" = "Free";
+"text_component.usage" = "Usage";
+"text_component.total" = "Total";
+"text_component.usagePercentage" = "Usage Percentage";
+"text_component.temperature" = "Temperature";
+"text_component.upload" = "Upload";
+"text_component.download" = "Download";
+"text_component.percentage" = "Percentage";
+"text_component.mah" = "mAh";
+"text_component.loadAverage1Min" = "Load Average (1 min)";
+"text_component.loadAverage5Min" = "Load Average (5 min)";
+"text_component.loadAverage15Min" = "Load Average (15 min)";
+"text_component.average" = "Average";
+"text_component.timeRemaining" = "Time Remaining";
+
+// MARK: CPU Display Mode
+"cpu_display_mode" = "CPU Display Mode";
+"cpu_display_mode.usage_percentage" = "Usage %";
+"cpu_display_mode.load_average" = "Load Average";
+
+//MARK: Widget
+"widget.not_available" = "eul ачааллаагүй байна";
+"widget.cpu.title" = "CPU Виджет";
+"widget.cpu.description" = "CPU мэдээлэл харах";
+"widget.memory.title" = "Санах ойн Виджет";
+"widget.memory.description" = "Санах ойн мэдээлэл харах";
+"widget.battery.title" = "Батaрей Виджет";
+"widget.battery.description" = "Батaрей мэдээлэл харах";
+"widget.network.title" = "Сүлжээний Виджет";
+"widget.network.description" = "Сүлжээ мэдээлэл харах";
+"widget.gpu.title" = "GPU Виджет";
+"widget.gpu.description" = "GPU мэдээлэл харах";
