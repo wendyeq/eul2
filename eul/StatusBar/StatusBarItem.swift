@@ -773,7 +773,14 @@ class StatusBarItem: NSObject, NSMenuDelegate {
         }
 
         let buttonRect = buttonWindow.convertToScreen(button.convert(button.bounds, to: nil))
-        var origin = NSPoint(x: buttonRect.maxX - size.width, y: buttonRect.minY - size.height)
+        // Pre–macOS 27: match NSMenu — leading edge of the extra, not trailing-aligned panel.
+        let anchorX: CGFloat
+        if #unavailable(macOS 27.0) {
+            anchorX = buttonRect.minX
+        } else {
+            anchorX = buttonRect.maxX - size.width
+        }
+        var origin = NSPoint(x: anchorX, y: buttonRect.minY - size.height)
         if let screen = buttonWindow.screen ?? NSScreen.main {
             let visible = screen.visibleFrame
             origin.x = min(max(origin.x, visible.minX + 4), visible.maxX - size.width - 4)
