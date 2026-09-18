@@ -47,6 +47,7 @@ class StatusBarItem: NSObject, NSMenuDelegate {
     private let item: NSStatusItem
     private var statusView: NSHostingView<AnyView>?
     private var menuView: NSHostingView<AnyView>?
+    private var statusMenuCustomItem: NSMenuItem?
     private var expandedPanel: StatusBarExpandedPanel?
     private var expandedCoordinator: AnyObject?
     private var expandedEventMonitor: Any?
@@ -152,11 +153,15 @@ class StatusBarItem: NSObject, NSMenuDelegate {
     }
 
     func menuWillOpen(_ menu: NSMenu) {
+        reattachMenuViewToStatusMenuIfNeeded()
         SharedStore.ui.menuWidth = menu.size.width
         SharedStore.ui.menuOpened = true
     }
 
     func menuDidClose(_: NSMenu) {
+        if SharedStore.ui.isStatusMenuPinned || isPre27MenuPanelVisible {
+            return
+        }
         SharedStore.ui.menuOpened = false
         SharedStore.ui.clearPinnedMenuProcesses()
     }
@@ -205,9 +210,13 @@ class StatusBarItem: NSObject, NSMenuDelegate {
             return
         }
         SharedStore.ui.isStatusMenuPinned = true
-        applyExpandedPanelPinChrome(pinned: true)
-        // End the system session so mouse-leave does not tear the panel down.
-        cancelExpandedInterfaceSession()
+        if #available(macOS 27.0, *) {
+            applyExpandedPanelPinChrome(pinned: true)
+            // End the system session so mouse-leave does not tear the panel down.
+            cancelExpandedInterfaceSession()
+        } else {
+            pinPre27MenuUsingPanel()
+        }
     }
 
     func hideExpandedInterface(animated: Bool, force: Bool = false) {
@@ -238,11 +247,50 @@ class StatusBarItem: NSObject, NSMenuDelegate {
         } else {
             panel.orderOut(nil)
         }
+        if #unavailable(macOS 27.0) {
+            reattachMenuViewToStatusMenuIfNeeded()
+        }
+    }
+
+    private var isPre27MenuPanelVisible: Bool {
+        if #available(macOS 27.0, *) {
+            return false
+        }
+        return expandedPanel?.isVisible == true
+    }
+
+    private func pinPre27MenuUsingPanel() {
+        statusBarMenu.cancelTracking()
+        SharedStore.ui.menuOpened = true
+        expandedGeneration += 1
+        ensureExpandedPanel()
+        positionExpandedPanel()
+        applyExpandedPanelPinChrome(pinned: true)
+        installExpandedInterfaceMonitors()
+        expandedPanel?.alphaValue = 1
+        expandedPanel?.makeKeyAndOrderFront(nil)
+    }
+
+    private func reattachMenuViewToStatusMenuIfNeeded() {
+        guard #unavailable(macOS 27.0) else {
+            return
+        }
+        guard let menuView = menuView, let customItem = statusMenuCustomItem else {
+            return
+        }
+        guard menuView.superview !== customItem else {
+            return
+        }
+        menuView.removeFromSuperview()
+        customItem.view = menuView
     }
 
     func dismissMenuOrExpandedInterface() {
         cancelExpandedInterfaceSession()
         statusBarMenu.cancelTracking()
+        if isPre27MenuPanelVisible {
+            hideExpandedInterface(animated: false, force: true)
+        }
     }
 
     /// WWDC26 #289: run the action, then cancel the expanded session (not the reverse).
@@ -593,6 +641,8 @@ class StatusBarItem: NSObject, NSMenuDelegate {
             menuView = StatusBarMenuHostingView(rootView: AnyView(
                 menuBuilder(onMenuSizeChange)
                     .environment(\.statusMenuExpandedChrome, usesExpandedChrome)
+                    .environment(\.statusMenuHeaderIconChrome, true)
+                    .environment(\.statusMenuUsesNSMenuTracking, !usesExpandedChrome)
             ))
             menuView?.translatesAutoresizingMaskIntoConstraints = false
             menuView?.setFrameSize(NSSize(width: StatusMenuView.menuWidth, height: 1))
@@ -607,6 +657,7 @@ class StatusBarItem: NSObject, NSMenuDelegate {
             } else {
                 let customItem = NSMenuItem()
                 customItem.view = menuView
+                statusMenuCustomItem = customItem
                 statusBarMenu.addItem(customItem)
                 item.menu = statusBarMenu
             }

@@ -13,6 +13,16 @@ private struct StatusMenuExpandedChromeKey: EnvironmentKey {
     static let defaultValue = false
 }
 
+/// SF Symbol header controls (gear / quit / pin); independent of macOS 27 expanded layout.
+private struct StatusMenuHeaderIconChromeKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+/// Pre–macOS 27 dropdown is hosted in `NSMenu` tracking; pin must migrate to a panel.
+private struct StatusMenuUsesNSMenuTrackingKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
 private struct MenuCompactLayoutKey: EnvironmentKey {
     static let defaultValue = false
 }
@@ -21,6 +31,16 @@ extension EnvironmentValues {
     var statusMenuExpandedChrome: Bool {
         get { self[StatusMenuExpandedChromeKey.self] }
         set { self[StatusMenuExpandedChromeKey.self] = newValue }
+    }
+
+    var statusMenuHeaderIconChrome: Bool {
+        get { self[StatusMenuHeaderIconChromeKey.self] }
+        set { self[StatusMenuHeaderIconChromeKey.self] = newValue }
+    }
+
+    var statusMenuUsesNSMenuTracking: Bool {
+        get { self[StatusMenuUsesNSMenuTrackingKey.self] }
+        set { self[StatusMenuUsesNSMenuTrackingKey.self] = newValue }
     }
 
     var menuCompactLayout: Bool {

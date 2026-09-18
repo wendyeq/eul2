@@ -18,6 +18,7 @@ struct StatusMenuView: SizeChangeView {
     @EnvironmentObject var menuComponentsStore: ComponentsStore<EulMenuComponent>
     @EnvironmentObject var uiStore: UIStore
     @Environment(\.statusMenuExpandedChrome) private var expandedChrome
+    @Environment(\.statusMenuHeaderIconChrome) private var headerIconChrome
 
     var onSizeChange: ((CGSize) -> Void)?
 
@@ -52,7 +53,7 @@ struct StatusMenuView: SizeChangeView {
                 }
                 .contentShape(Rectangle())
                 .pinnedHeaderWindowDrag(enabled: uiStore.isStatusMenuPinned)
-                if expandedChrome {
+                if headerIconChrome {
                     HStack(spacing: 8) {
                         MenuHeaderIconButton(
                             id: "menu.preferences",
@@ -71,6 +72,7 @@ struct StatusMenuView: SizeChangeView {
                             systemImage: uiStore.isStatusMenuPinned ? "pin.fill" : "pin",
                             titleKey: uiStore.isStatusMenuPinned ? "menu.unpin" : "menu.pin",
                             isActive: uiStore.isStatusMenuPinned,
+                            usesPointerDown: true,
                             action: { StatusBarManager.shared.toggleStatusMenuPin() }
                         )
                     }

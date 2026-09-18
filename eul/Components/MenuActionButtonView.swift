@@ -148,7 +148,7 @@ private struct ExpandedMenuPointerDownSymbolButton: NSViewRepresentable {
     }
 }
 
-private final class ExpandedMenuPointerDownControl: NSButton {
+final class ExpandedMenuPointerDownControl: NSButton {
     var onPress: (() -> Void)?
 
     override init(frame frameRect: NSRect) {

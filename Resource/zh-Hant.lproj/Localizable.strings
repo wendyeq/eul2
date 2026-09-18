@@ -101,7 +101,7 @@
 "menu.yes" = "是";
 "menu.no" = "否";
 "menu.preferences" = "偏好設定";
-"menu.quit" = "退出 eul";
+"menu.quit" = "退出 eul2";
 "menu.show_cpu_top_activities" = "顯示 CPU 活躍程序";
 "menu.show_ram_top_activities" = "顯示記憶體活躍程序";
 "menu.show_network_top_activities" = "顯示網路活躍程序";
