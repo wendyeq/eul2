@@ -62,6 +62,8 @@ class StatusBarItem: NSObject, NSMenuDelegate {
     private var visibilityObservation: NSKeyValueObservation?
     private var statusBarSizeChanged = 0
     private var extraLayoutGeneration = 0
+    private var pre27PinPanelPresentationScheduled = false
+    private var isStatusBarMenuTracking = false
 
     /// Called when AppKit updates `NSStatusItem.isVisible` (Control Center, menu-bar settings, or in-app toggle).
     var onVisibilityChange: ((Bool) -> Void)?
@@ -153,12 +155,20 @@ class StatusBarItem: NSObject, NSMenuDelegate {
     }
 
     func menuWillOpen(_ menu: NSMenu) {
+        isStatusBarMenuTracking = true
         SharedStore.ui.menuWidth = menu.size.width
         SharedStore.ui.menuOpened = true
     }
 
     func menuDidClose(_: NSMenu) {
-        if SharedStore.ui.isStatusMenuPinned || isPre27MenuPanelVisible {
+        isStatusBarMenuTracking = false
+        if SharedStore.ui.isStatusMenuPinned {
+            if #unavailable(macOS 27.0) {
+                schedulePre27PinnedPanelPresentation()
+            }
+            return
+        }
+        if isPre27MenuPanelVisible {
             return
         }
         SharedStore.ui.menuOpened = false
@@ -227,23 +237,24 @@ class StatusBarItem: NSObject, NSMenuDelegate {
         SharedStore.ui.clearPinnedMenuProcesses()
         applyExpandedPanelPinChrome(pinned: false)
         removeExpandedInterfaceMonitors()
-        guard let panel = expandedPanel, panel.isVisible else {
-            return
-        }
-        if animated {
-            let generation = expandedGeneration
-            NSAnimationContext.runAnimationGroup({ context in
-                context.duration = 0.12
-                panel.animator().alphaValue = 0
-            }, completionHandler: { [weak self] in
-                // A new session may have begun mid-fade; only order out if it didn't.
-                guard let self, self.expandedGeneration == generation else {
-                    return
-                }
-                self.finishHidingExpandedPanel(panel)
-            })
-        } else {
-            finishHidingExpandedPanel(panel)
+        if let panel = expandedPanel, panel.isVisible {
+            if animated {
+                let generation = expandedGeneration
+                NSAnimationContext.runAnimationGroup({ context in
+                    context.duration = 0.12
+                    panel.animator().alphaValue = 0
+                }, completionHandler: { [weak self] in
+                    // A new session may have begun mid-fade; only order out if it didn't.
+                    guard let self, self.expandedGeneration == generation else {
+                        return
+                    }
+                    self.finishHidingExpandedPanel(panel)
+                })
+            } else {
+                finishHidingExpandedPanel(panel)
+            }
+        } else if #unavailable(macOS 27.0) {
+            reattachMenuViewFromPinPanelIfNeeded()
         }
     }
 
@@ -255,15 +266,55 @@ class StatusBarItem: NSObject, NSMenuDelegate {
     }
 
     private func pinPre27MenuUsingPanel() {
-        statusBarMenu.cancelTracking()
         SharedStore.ui.menuOpened = true
+        beginExpandedDismissSuppression()
+        statusBarMenu.cancelTracking()
+        schedulePre27PinnedPanelPresentation()
+    }
+
+    private func schedulePre27PinnedPanelPresentation() {
+        guard #unavailable(macOS 27.0) else {
+            return
+        }
+        guard SharedStore.ui.isStatusMenuPinned else {
+            return
+        }
+        guard !pre27PinPanelPresentationScheduled else {
+            return
+        }
+        pre27PinPanelPresentationScheduled = true
+        DispatchQueue.main.async { [weak self] in
+            guard let self else {
+                return
+            }
+            self.pre27PinPanelPresentationScheduled = false
+            self.presentPre27PinnedPanelIfNeeded()
+        }
+    }
+
+    private func presentPre27PinnedPanelIfNeeded() {
+        guard #unavailable(macOS 27.0) else {
+            return
+        }
+        guard SharedStore.ui.isStatusMenuPinned else {
+            return
+        }
+        guard expandedPanel?.isVisible != true else {
+            return
+        }
+        if isStatusBarMenuTracking {
+            schedulePre27PinnedPanelPresentation()
+            return
+        }
         expandedGeneration += 1
         ensureExpandedPanel()
         positionExpandedPanel()
         applyExpandedPanelPinChrome(pinned: true)
         installExpandedInterfaceMonitors()
+        beginExpandedDismissSuppression()
         expandedPanel?.alphaValue = 1
         expandedPanel?.makeKeyAndOrderFront(nil)
+        SharedStore.ui.menuOpened = true
     }
 
     private func finishHidingExpandedPanel(_ panel: StatusBarExpandedPanel) {
@@ -359,7 +410,10 @@ class StatusBarItem: NSObject, NSMenuDelegate {
             guard let self, !self.shouldSuppressExpandedAutoDismiss() else {
                 return
             }
-            self.cancelExpandedInterfaceSession()
+            if SharedStore.ui.isStatusMenuPinned {
+                return
+            }
+            self.dismissExpandedMenuPresentation()
         }
         guard expandedResignKeyObserver == nil else {
             return
@@ -378,8 +432,22 @@ class StatusBarItem: NSObject, NSMenuDelegate {
                 if self.shouldSuppressExpandedAutoDismiss() {
                     return
                 }
-                self.cancelExpandedInterfaceSession()
+                if SharedStore.ui.isStatusMenuPinned {
+                    return
+                }
+                self.dismissExpandedMenuPresentation()
             }
+        }
+    }
+
+    /// End macOS 27 expanded session and/or hide a pre-27 pin panel.
+    private func dismissExpandedMenuPresentation(animated: Bool = true) {
+        if #available(macOS 27.0, *) {
+            cancelExpandedInterfaceSession()
+            return
+        }
+        if expandedPanel?.isVisible == true {
+            hideExpandedInterface(animated: animated, force: true)
         }
     }
 
@@ -527,7 +595,12 @@ class StatusBarItem: NSObject, NSMenuDelegate {
     }
 
     private func ensureExpandedPanel() {
-        guard expandedPanel == nil, let menuView = menuView else {
+        guard let menuView = menuView else {
+            return
+        }
+
+        if let panel = expandedPanel {
+            attachMenuHostingViewToExpandedPanel(menuView, panel: panel)
             return
         }
 
@@ -548,15 +621,22 @@ class StatusBarItem: NSObject, NSMenuDelegate {
         panel.autorecalculatesKeyViewLoop = true
         panel.isReleasedWhenClosed = false
         panel.isMovableByWindowBackground = false
+        attachMenuHostingViewToExpandedPanel(menuView, panel: panel)
+        expandedPanel = panel
+        applyExpandedPanelPinChrome(pinned: false)
+        setAppearance(preferenceStore.appearanceMode.nsAppearance)
+    }
+
+    private func attachMenuHostingViewToExpandedPanel(_ menuView: NSHostingView<AnyView>, panel: StatusBarExpandedPanel) {
+        if panel.contentView === menuView {
+            return
+        }
         menuView.removeFromSuperview()
         menuView.wantsLayer = true
         menuView.layer?.backgroundColor = NSColor.clear.cgColor
         menuView.layer?.masksToBounds = true
         menuView.layer?.cornerRadius = MenuChromeMetrics.shellCornerRadius
         panel.contentView = menuView
-        expandedPanel = panel
-        applyExpandedPanelPinChrome(pinned: false)
-        setAppearance(preferenceStore.appearanceMode.nsAppearance)
     }
 
     /// A pinned panel must not keep `.popUpMenu` level, or it covers every other app.
@@ -586,7 +666,7 @@ class StatusBarItem: NSObject, NSMenuDelegate {
         guard size.width > 1, size.height > 1 else {
             return
         }
-        if SharedStore.ui.isStatusMenuPinned {
+        if SharedStore.ui.isStatusMenuPinned, panel.isVisible {
             let frame = panel.frame
             panel.setFrame(
                 NSRect(x: frame.minX, y: frame.maxY - size.height, width: size.width, height: size.height),
