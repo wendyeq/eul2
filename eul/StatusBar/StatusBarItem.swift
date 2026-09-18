@@ -639,9 +639,13 @@ class StatusBarItem: NSObject, NSMenuDelegate {
         if let pinnedPanelMenuView {
             return pinnedPanelMenuView
         }
-        let view = makeStatusMenuHostingView(usesNSMenuTracking: false, onSizeChange: { [weak self] size in
-            self?.onPinnedPanelMenuSizeChange(size: size)
-        })
+        let view = makeStatusMenuHostingView(
+            usesExpandedChrome: false,
+            usesNSMenuTracking: false,
+            onSizeChange: { [weak self] size in
+                self?.onPinnedPanelMenuSizeChange(size: size)
+            }
+        )
         pinnedPanelMenuView = view
         return view
     }
@@ -751,15 +755,10 @@ class StatusBarItem: NSObject, NSMenuDelegate {
     }
 
     private func makeStatusMenuHostingView(
+        usesExpandedChrome: Bool,
         usesNSMenuTracking: Bool,
         onSizeChange: @escaping (CGSize) -> Void
     ) -> StatusBarMenuHostingView<AnyView> {
-        let usesExpandedChrome: Bool
-        if #available(macOS 27.0, *) {
-            usesExpandedChrome = true
-        } else {
-            usesExpandedChrome = false
-        }
         guard let menuBuilder = config.menuBuilder else {
             fatalError("StatusBarItem requires menuBuilder")
         }
@@ -769,6 +768,7 @@ class StatusBarItem: NSObject, NSMenuDelegate {
                 .environment(\.statusMenuHeaderIconChrome, true)
                 .environment(\.statusMenuUsesNSMenuTracking, usesNSMenuTracking)
         ))
+        view.usesExpandedPanelShell = usesExpandedChrome
         view.translatesAutoresizingMaskIntoConstraints = false
         view.setFrameSize(NSSize(width: StatusMenuView.menuWidth, height: 1))
         return view
@@ -791,17 +791,25 @@ class StatusBarItem: NSObject, NSMenuDelegate {
         if let menuBuilder = config.menuBuilder {
             _ = menuBuilder
             if #available(macOS 27.0, *) {
-                menuView = makeStatusMenuHostingView(usesNSMenuTracking: false, onSizeChange: { [weak self] size in
-                    self?.onMenuSizeChange(size: size)
-                })
+                menuView = makeStatusMenuHostingView(
+                    usesExpandedChrome: true,
+                    usesNSMenuTracking: false,
+                    onSizeChange: { [weak self] size in
+                        self?.onMenuSizeChange(size: size)
+                    }
+                )
                 let coordinator = StatusBarExpandedInterfaceCoordinator(owner: self)
                 expandedCoordinator = coordinator
                 item.expandedInterfaceDelegate = coordinator
                 ensureExpandedPanel()
             } else {
-                menuView = makeStatusMenuHostingView(usesNSMenuTracking: true, onSizeChange: { [weak self] size in
-                    self?.onMenuSizeChange(size: size)
-                })
+                menuView = makeStatusMenuHostingView(
+                    usesExpandedChrome: false,
+                    usesNSMenuTracking: true,
+                    onSizeChange: { [weak self] size in
+                        self?.onMenuSizeChange(size: size)
+                    }
+                )
                 let customItem = NSMenuItem()
                 customItem.view = menuView
                 statusMenuCustomItem = customItem
