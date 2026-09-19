@@ -25,7 +25,9 @@ enum GrokQuotaClient {
         }
 
         var needsRefresh: Bool {
-            accessToken.isEmpty || GrokQuotaClient.isExpired(expiresAt)
+            accessToken.isEmpty
+                || GrokQuotaClient.isExpiredTimestamp(expiresAt)
+                || GrokQuotaClient.isExpiredJWT(accessToken)
         }
     }
 
@@ -47,7 +49,8 @@ enum GrokQuotaClient {
         }
 
         var result = requestCredits(token: credential.accessToken)
-        if isUnauthenticated(result), !didRefresh, credential.canRefresh {
+        // grok.com may omit grpc-status on HTTP/2; 200 + empty body is the unauth shape.
+        if shouldRetryRefresh(result), !didRefresh, credential.canRefresh {
             if applyRefresh(&credential) {
                 result = requestCredits(token: credential.accessToken)
             }
@@ -121,7 +124,20 @@ enum GrokQuotaClient {
         if result.status == 401 || result.status == 403 {
             return true
         }
-        return grpcStatus(result) == 16
+        if grpcStatus(result) == 16 {
+            return true
+        }
+        return result.ok && (result.data?.isEmpty ?? true)
+    }
+
+    private static func shouldRetryRefresh(_ result: QuotaHTTP.Result) -> Bool {
+        if isUnauthenticated(result) {
+            return true
+        }
+        guard result.ok, let data = result.data, !data.isEmpty else {
+            return false
+        }
+        return GrokCreditsParser.parse(data) == nil && grpcStatus(result) != 0
     }
 
     private static func grpcStatus(_ result: QuotaHTTP.Result) -> Int? {
@@ -238,11 +254,39 @@ enum GrokQuotaClient {
         }
     }
 
-    private static func isExpired(_ raw: String) -> Bool {
+    private static func isExpiredTimestamp(_ raw: String) -> Bool {
         guard let date = parseExpiresAt(raw) else {
             return false
         }
         return date.timeIntervalSinceNow <= refreshSkew
+    }
+
+    private static func isExpiredJWT(_ token: String) -> Bool {
+        guard let date = jwtExpiry(token) else {
+            return false
+        }
+        return date.timeIntervalSinceNow <= refreshSkew
+    }
+
+    private static func jwtExpiry(_ token: String) -> Date? {
+        let parts = token.split(separator: ".", omittingEmptySubsequences: false)
+        guard parts.count == 3 else {
+            return nil
+        }
+        var payload = String(parts[1])
+            .replacingOccurrences(of: "-", with: "+")
+            .replacingOccurrences(of: "_", with: "/")
+        let pad = (4 - payload.count % 4) % 4
+        if pad > 0 {
+            payload.append(String(repeating: "=", count: pad))
+        }
+        guard let data = Data(base64Encoded: payload),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let exp = QuotaTimestamp.number(fromAPI: json["exp"]), exp > 0
+        else {
+            return nil
+        }
+        return Date(timeIntervalSince1970: exp)
     }
 
     private static func parseExpiresAt(_ raw: String) -> Date? {

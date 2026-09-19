@@ -2,9 +2,27 @@
 
 本分支基于 [gao-sun/eul](https://github.com/gao-sun/eul) 继续开发。上游最后广泛使用的 Intel 版本为 **[1.6.2](https://github.com/gao-sun/eul/releases/tag/1.6.2)**。
 
-## [2.1.0] — unreleased
+## [2.1.0] — 2026-09-19
 
-- 最低系统从 **macOS 12.0** 提升为 **macOS 13.0**（App、Widget、SharedLibrary、SelfUpdate 一致）。2.0.0 仍为 12.0。
+面向 **Apple Silicon（arm64）**、**macOS 13+**。营销版本 **2.1.0**（build 70）。安装仍为 **`eul2.app`** / `com.wendyeq.eul2`。ad-hoc 签名，首次需右键打开。
+
+### 平台
+
+- 最低系统从 **macOS 12.0** 提升为 **macOS 13.0**（App、Widget、SharedLibrary、SelfUpdate 一致）。2.0.0 仍支持 12.0。
+- 产品功能在 13 到当前系统上同一套；`#available` 只包旧系统没有的符号或系统入口（如 27 的 expanded session、26 的 `glassEffect`）。
+
+### 菜单
+
+- 下拉顶栏 **偏好 / 退出 / 钉住菜单**；钉住后菜单保持打开。
+- 弹出位置相对状态栏图标 **居中**（macOS 13–27 同一套）。
+- 13–26 与 27 共用展开 chrome（滚动、圆角壳、图标按钮）；26+ 为玻璃材质，更早系统走菜单 visual effect。
+- 等 SwiftUI 量到真实高度再显示，避免首次打开闪矮面板。
+
+### 额度
+
+- 下拉新增 **额度** 区块（默认关闭，在偏好 → 菜单视图中添加）：Cursor / Grok / Codex **订阅额度**。
+- 三个供应商并行请求，谁先返回谁先填，不必等全部结束。
+- Grok access token 过期时静默续期并写回 `~/.grok/auth.json` 的 `key` / `refresh_token` / `expires_at`。Credits 返回 HTTP 200 空 body 或 `grpc-status: 16` 时会续期重试，不再一直显示「失败」。
 
 ## [2.0.0] — 2026-09-18
 
