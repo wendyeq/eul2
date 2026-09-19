@@ -782,7 +782,8 @@ class StatusBarItem: NSObject, NSMenuDelegate {
         }
 
         let buttonRect = buttonWindow.convertToScreen(button.convert(button.bounds, to: nil))
-        let anchorX = buttonRect.maxX - size.width
+        // Center under the status item, same as the pre-27 compact panel.
+        let anchorX = buttonRect.midX - size.width / 2
         var origin = NSPoint(x: anchorX, y: buttonRect.minY - size.height)
         if let screen = buttonWindow.screen ?? NSScreen.main {
             let visible = screen.visibleFrame
