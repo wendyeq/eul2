@@ -11,19 +11,19 @@ macOS menu bar system monitor. **Version 2.0.0** in this repository is an Apple 
 ## Highlights
 
 - Apple Silicon sensors (CPU/GPU temperature, fans, GPU usage, ANE, memory bandwidth where available)
-- macOS 12+ menu bar extras, Big Sur–style widgets, and an **expanded interface** dropdown on recent macOS (Liquid Glass shell on macOS 27)
+- macOS 13+ menu bar extras, Big Sur–style widgets, and an **expanded interface** dropdown on recent macOS (Liquid Glass shell on macOS 27)
 - Bluetooth battery per device, disk space plus live read/write rates, memory pressure, cumulative network totals
 - Dark Mode, light/dark/auto appearance, VoiceOver-friendly labels, and preferences styled closer to System Settings
 - Written in SwiftUI (as much as possible)
 
 ## OS and chip support
 
-**eul 2.0.0 is Apple Silicon (`arm64`) only, minimum macOS 12.0.**
+**This fork is Apple Silicon (`arm64`) only, minimum macOS 13.0** (2.0.0 was 12.0).
 
-| | **Upstream gao-sun/eul 1.6.2** | **This fork 2.0.0** |
+| | **Upstream gao-sun/eul 1.6.2** | **This fork 2.1.0** |
 |---|---|---|
 | CPU | Intel + Apple Silicon | Apple Silicon only |
-| macOS | Older releases through Intel-capable versions | **12.0+** |
+| macOS | Older releases through Intel-capable versions | **13.0+** |
 | Install | [Official release](https://github.com/gao-sun/eul/releases/tag/1.6.2) / Homebrew / App Store → **`eul.app`** | [wendyeq/eul2 Release](https://github.com/wendyeq/eul2/releases/latest) **`eul2.app.zip`**, or build from source → **`/Applications/eul2.app`** (not Homebrew) |
 
 - **Intel Macs:** stay on **[gao-sun/eul 1.6.2](https://github.com/gao-sun/eul/releases/tag/1.6.2)** (or earlier). There is no `x86_64` slice in 2.0.0; Rosetta is not supported for this build.
@@ -88,7 +88,7 @@ Compared to **[gao-sun/eul 1.6.2](https://github.com/gao-sun/eul/releases/tag/1.
 
 To run **2.0.0** alongside (or instead of) that build:
 
-1. On an **Apple Silicon** Mac (**macOS 12+**), open `eul.xcodeproj` and build the **eul** scheme (Release), or use a prebuilt `eul.app` from someone who built this tree.
+1. On an **Apple Silicon** Mac (**macOS 13+**), open `eul.xcodeproj` and build the **eul** scheme (Release), or use a prebuilt `eul.app` from someone who built this tree.
 2. Ad-hoc sign if needed: `CODE_SIGN_IDENTITY=-` (not notarized; no Developer ID in-tree).
 3. Copy the product to **`/Applications/eul2.app`** (rename on copy — the Xcode product folder is still named `eul.app`, but the installed name must be **`eul2.app`** so it does not overwrite Homebrew’s `eul.app`).
 4. First launch: if macOS blocks the app, **right-click → Open** once (Gatekeeper for ad-hoc builds), or allow in **System Settings → Privacy & Security**.

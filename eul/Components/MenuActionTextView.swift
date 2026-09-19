@@ -14,7 +14,7 @@ struct MenuHeaderIconButton: View {
     let systemImage: String
     let titleKey: String
     var isActive: Bool = false
-    /// Mouse-down delivery while `NSMenu` is tracking (pin on macOS 12–26).
+    /// Mouse-down delivery while `NSMenu` is tracking (pin on macOS 13–26).
     var usesPointerDown: Bool = false
     var action: (() -> Void)?
 

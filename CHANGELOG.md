@@ -2,6 +2,10 @@
 
 本分支基于 [gao-sun/eul](https://github.com/gao-sun/eul) 继续开发。上游最后广泛使用的 Intel 版本为 **[1.6.2](https://github.com/gao-sun/eul/releases/tag/1.6.2)**。
 
+## [2.1.0] — unreleased
+
+- 最低系统从 **macOS 12.0** 提升为 **macOS 13.0**（App、Widget、SharedLibrary、SelfUpdate 一致）。2.0.0 仍为 12.0。
+
 ## [2.0.0] — 2026-09-18
 
 面向 **Apple Silicon（arm64）**、**macOS 12+**。安装包名为 **`eul2.app`**，Bundle ID **`com.wendyeq.eul2`**（与 Homebrew / 上游 `com.gaosun.eul` 的 1.6.2 并存，偏好与登录项不互通）。Intel Mac 请继续使用上游 **1.6.2**。

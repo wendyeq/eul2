@@ -127,11 +127,7 @@ extension Text {
 
 private struct PreferenceDetailScrollSurface: ViewModifier {
     func body(content: Content) -> some View {
-        if #available(macOS 13.0, *) {
-            content.scrollContentBackground(.hidden)
-        } else {
-            content
-        }
+        content.scrollContentBackground(.hidden)
     }
 }
 
