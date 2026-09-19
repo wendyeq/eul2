@@ -124,17 +124,29 @@ enum QuotaHTTP {
         let ok: Bool
         let status: Int
         let data: Data?
+        let headers: [String: String]
+
+        func header(_ name: String) -> String? {
+            headers[name.lowercased()]
+        }
     }
 
     static func request(_ request: URLRequest, maxBytes: Int) -> Result {
         let semaphore = DispatchSemaphore(value: 0)
-        var captured = Result(ok: false, status: 0, data: nil)
+        var captured = Result(ok: false, status: 0, data: nil, headers: [:])
         let task = URLSession.shared.dataTask(with: request) { data, response, _ in
-            let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+            let http = response as? HTTPURLResponse
+            let status = http?.statusCode ?? 0
+            var headers: [String: String] = [:]
+            if let http {
+                for (key, value) in http.allHeaderFields {
+                    headers[String(describing: key).lowercased()] = String(describing: value)
+                }
+            }
             if let data, data.count > maxBytes {
-                captured = Result(ok: false, status: status, data: nil)
+                captured = Result(ok: false, status: status, data: nil, headers: headers)
             } else {
-                captured = Result(ok: status >= 200 && status < 300, status: status, data: data)
+                captured = Result(ok: status >= 200 && status < 300, status: status, data: data, headers: headers)
             }
             semaphore.signal()
         }
