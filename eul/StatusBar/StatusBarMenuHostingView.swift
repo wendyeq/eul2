@@ -11,7 +11,7 @@ import SwiftUI
 
 class StatusBarMenuHostingView<Content: View>: NSHostingView<Content> {
     override var isOpaque: Bool { false }
-    /// macOS 27 expanded-interface panel shell; pre–27 pin panel keeps compact (0 radius).
+    /// Dropdown panel clips to the shared shell corner radius.
     var usesExpandedPanelShell = false
 
     required init(rootView: Content) {

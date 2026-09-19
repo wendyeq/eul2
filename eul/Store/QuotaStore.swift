@@ -142,48 +142,48 @@ class QuotaStore: ObservableObject {
             return
         }
         isFetching = true
-        let previousCursor = cursor
-        let previousGrok = grok
-        let previousCodex = codex
         let group = DispatchGroup()
-        var cursorSnapshot = previousCursor
-        var grokSnapshot = previousGrok
-        var codexSnapshot = previousCodex
         if showCursor {
             group.enter()
-            DispatchQueue.global(qos: .utility).async {
-                cursorSnapshot = CursorQuotaClient.fetchSync()
-                group.leave()
+            DispatchQueue.global(qos: .utility).async { [weak self] in
+                let snapshot = CursorQuotaClient.fetchSync()
+                DispatchQueue.main.async {
+                    defer { group.leave() }
+                    guard let self else {
+                        return
+                    }
+                    self.cursor = QuotaProviderSnapshot.merging(previous: self.cursor, incoming: snapshot)
+                }
             }
         }
         if showGrok {
             group.enter()
-            DispatchQueue.global(qos: .utility).async {
-                grokSnapshot = GrokQuotaClient.fetchSync()
-                group.leave()
+            DispatchQueue.global(qos: .utility).async { [weak self] in
+                let snapshot = GrokQuotaClient.fetchSync()
+                DispatchQueue.main.async {
+                    defer { group.leave() }
+                    guard let self else {
+                        return
+                    }
+                    self.grok = QuotaProviderSnapshot.merging(previous: self.grok, incoming: snapshot)
+                }
             }
         }
         if showCodex {
             group.enter()
-            DispatchQueue.global(qos: .utility).async {
-                codexSnapshot = CodexQuotaClient.fetchSync()
-                group.leave()
+            DispatchQueue.global(qos: .utility).async { [weak self] in
+                let snapshot = CodexQuotaClient.fetchSync()
+                DispatchQueue.main.async {
+                    defer { group.leave() }
+                    guard let self else {
+                        return
+                    }
+                    self.codex = QuotaProviderSnapshot.merging(previous: self.codex, incoming: snapshot)
+                }
             }
         }
         group.notify(queue: .main) { [weak self] in
-            guard let self else {
-                return
-            }
-            if showCursor {
-                self.cursor = QuotaProviderSnapshot.merging(previous: previousCursor, incoming: cursorSnapshot)
-            }
-            if showGrok {
-                self.grok = QuotaProviderSnapshot.merging(previous: previousGrok, incoming: grokSnapshot)
-            }
-            if showCodex {
-                self.codex = QuotaProviderSnapshot.merging(previous: previousCodex, incoming: codexSnapshot)
-            }
-            self.isFetching = false
+            self?.isFetching = false
         }
     }
 }
