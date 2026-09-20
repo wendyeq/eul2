@@ -283,3 +283,20 @@ battery.timeRemaining = "Time Rem.";
 "widget.network.description" = "네트워크 정보를 표시합니다";
 "widget.gpu.title" = "GPU 위젯";
 "widget.gpu.description" = "GPU 정보를 표시합니다";
+
+// MARK: MCP
+
+"component.mcp" = "MCP";
+"ui.mcp" = "MCP";
+"mcp.hub_enabled" = "MCP Hub";
+"mcp.connect_agents" = "Connect Agents";
+"mcp.open_catalog" = "Open Config File";
+"mcp.listening" = "Listening";
+"mcp.stopped" = "Stopped";
+"mcp.failed" = "Failed";
+"mcp.never" = "Never";
+"mcp.empty" = "No servers";
+"mcp.connect_ok" = "Agents connected";
+"mcp.connect_failed" = "Connect failed:";
+"mcp.seconds_ago" = "%ds ago";
+"mcp.minutes_ago" = "%dm ago";

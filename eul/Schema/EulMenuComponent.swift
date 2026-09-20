@@ -39,6 +39,8 @@ enum EulMenuComponent: String, CaseIterable, Identifiable, JSONCodabble {
             return AnyView(GpuMenuBlockView())
         case .Quota:
             return AnyView(QuotaMenuBlockView())
+        case .MCP:
+            return AnyView(McpMenuBlockView())
         }
     }
 
@@ -51,15 +53,16 @@ enum EulMenuComponent: String, CaseIterable, Identifiable, JSONCodabble {
     case Disk
     case GPU
     case Quota
+    case MCP
 
     static var allCases: [EulMenuComponent] {
         [.CPU, .GPU]
             .appending(.Fan, condition: SmcControl.shared.isFanValid)
-            .appending([.Memory, .Network, .Bluetooth, .Disk, .Quota])
+            .appending([.Memory, .Network, .Bluetooth, .Disk, .Quota, .MCP])
             .appending(.Battery, condition: SharedStore.battery.isValid)
     }
 
     static var defaultComponents: [Self] {
-        allCases.filter { ![.Bluetooth, .Disk, .Quota].contains($0) }
+        allCases.filter { ![.Bluetooth, .Disk, .Quota, .MCP].contains($0) }
     }
 }

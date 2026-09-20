@@ -36,6 +36,7 @@ DerivedData/
 *.ipa
 *.dSYM.zip
 *.dSYM
+dist/
 
 # Carthage
 #
@@ -47,4 +48,7 @@ Carthage/Build/
 # BuildTools
 BuildTools/.build
 BuildTools/.swiftpm
+
+## Local tool output
+reports/
 

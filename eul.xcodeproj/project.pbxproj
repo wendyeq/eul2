@@ -59,6 +59,21 @@
 		A5E2C00825BD7001000001 /* CursorQuotaClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E2C00725BD7001000001 /* CursorQuotaClient.swift */; };
 		A5E2C00A25BD7001000001 /* GrokQuotaClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E2C00925BD7001000001 /* GrokQuotaClient.swift */; };
 		A5E2C00C25BD7001000001 /* CodexQuotaClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5E2C00B25BD7001000001 /* CodexQuotaClient.swift */; };
+		A5MCP011 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5MCP010 /* main.swift */; };
+		A5MCP021 /* McpPaths.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5MCP020 /* McpPaths.swift */; };
+		A5MCP023 /* McpCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5MCP022 /* McpCatalog.swift */; };
+		A5MCP025 /* McpCallLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5MCP024 /* McpCallLog.swift */; };
+		A5MCP027 /* ProcessStdioTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5MCP026 /* ProcessStdioTransport.swift */; };
+		A5MCP029 /* McpUpstream.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5MCP028 /* McpUpstream.swift */; };
+		A5MCP031 /* McpAggregator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5MCP030 /* McpAggregator.swift */; };
+		A5MCP033 /* McpLoopbackHTTP.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5MCP032 /* McpLoopbackHTTP.swift */; };
+		A5MCP035 /* McpHub.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5MCP034 /* McpHub.swift */; };
+		A5MCP037 /* McpConnectCLI.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5MCP036 /* McpConnectCLI.swift */; };
+		A5MCP039 /* McpAgentWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5MCP038 /* McpAgentWriter.swift */; };
+		A5MCP041 /* McpStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5MCP040 /* McpStore.swift */; };
+		A5MCP043 /* McpMenuBlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5MCP042 /* McpMenuBlockView.swift */; };
+		A5MCP045 /* PreferenceMcpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5MCP044 /* PreferenceMcpView.swift */; };
+		A5MCP050 /* MCP in Frameworks */ = {isa = PBXBuildFile; productRef = A5MCP051 /* MCP */; };
 		6C321FC325BB12A600BFED76 /* BluetoothDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C321FC225BB12A600BFED76 /* BluetoothDevice.swift */; };
 		6C33CEC92517634400345977 /* StatusMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C33CEC82517634400345977 /* StatusMenuView.swift */; };
 		6C33CECD25177CE300345977 /* CpuMenuBlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C33CECC25177CE300345977 /* CpuMenuBlockView.swift */; };
@@ -439,6 +454,20 @@
 		A5E2C00725BD7001000001 /* CursorQuotaClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CursorQuotaClient.swift; sourceTree = "<group>"; };
 		A5E2C00925BD7001000001 /* GrokQuotaClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrokQuotaClient.swift; sourceTree = "<group>"; };
 		A5E2C00B25BD7001000001 /* CodexQuotaClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodexQuotaClient.swift; sourceTree = "<group>"; };
+		A5MCP010 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		A5MCP020 /* McpPaths.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = McpPaths.swift; sourceTree = "<group>"; };
+		A5MCP022 /* McpCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = McpCatalog.swift; sourceTree = "<group>"; };
+		A5MCP024 /* McpCallLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = McpCallLog.swift; sourceTree = "<group>"; };
+		A5MCP026 /* ProcessStdioTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessStdioTransport.swift; sourceTree = "<group>"; };
+		A5MCP028 /* McpUpstream.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = McpUpstream.swift; sourceTree = "<group>"; };
+		A5MCP030 /* McpAggregator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = McpAggregator.swift; sourceTree = "<group>"; };
+		A5MCP032 /* McpLoopbackHTTP.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = McpLoopbackHTTP.swift; sourceTree = "<group>"; };
+		A5MCP034 /* McpHub.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = McpHub.swift; sourceTree = "<group>"; };
+		A5MCP036 /* McpConnectCLI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = McpConnectCLI.swift; sourceTree = "<group>"; };
+		A5MCP038 /* McpAgentWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = McpAgentWriter.swift; sourceTree = "<group>"; };
+		A5MCP040 /* McpStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = McpStore.swift; sourceTree = "<group>"; };
+		A5MCP042 /* McpMenuBlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = McpMenuBlockView.swift; sourceTree = "<group>"; };
+		A5MCP044 /* PreferenceMcpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferenceMcpView.swift; sourceTree = "<group>"; };
 		6C321FBF25B5C8EF00BFED76 /* BluetoothMenuBlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothMenuBlockView.swift; sourceTree = "<group>"; };
 		6C321FC225BB12A600BFED76 /* BluetoothDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluetoothDevice.swift; sourceTree = "<group>"; };
 		6C33CEC82517634400345977 /* StatusMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusMenuView.swift; sourceTree = "<group>"; };
@@ -644,6 +673,7 @@
 				6C2688F52556762B00FB7306 /* SharedLibrary.framework in Frameworks */,
 				6CF28D0925168B8200EBE9CB /* SystemKit in Frameworks */,
 				6C86924C251665A50009A784 /* Localize_Swift in Frameworks */,
+				A5MCP050 /* MCP in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -879,6 +909,7 @@
 				6C5F854B249FACE200CF0EF8 /* eul.entitlements */,
 				6C5F854A249FACE200CF0EF8 /* Info.plist */,
 				6C5F853E249FACE000CF0EF8 /* AppDelegate.swift */,
+				A5MCP010 /* main.swift */,
 				6CAEED5224A5DE3800C39597 /* Extension */,
 				6C5F8547249FACE200CF0EF8 /* Main.storyboard */,
 				6C1FA40C24AA161900CA7F71 /* Schema */,
@@ -902,6 +933,23 @@
 			path = Views;
 			sourceTree = "<group>";
 		};
+		A5MCP060 /* MCP */ = {
+			isa = PBXGroup;
+			children = (
+				A5MCP020 /* McpPaths.swift */,
+				A5MCP022 /* McpCatalog.swift */,
+				A5MCP024 /* McpCallLog.swift */,
+				A5MCP026 /* ProcessStdioTransport.swift */,
+				A5MCP028 /* McpUpstream.swift */,
+				A5MCP030 /* McpAggregator.swift */,
+				A5MCP032 /* McpLoopbackHTTP.swift */,
+				A5MCP034 /* McpHub.swift */,
+				A5MCP036 /* McpConnectCLI.swift */,
+				A5MCP038 /* McpAgentWriter.swift */,
+			);
+			path = MCP;
+			sourceTree = "<group>";
+		};
 		6C5F855924A5D9A500CF0EF8 /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
@@ -921,6 +969,7 @@
 				A5E2C00725BD7001000001 /* CursorQuotaClient.swift */,
 				A5E2C00925BD7001000001 /* GrokQuotaClient.swift */,
 				A5E2C00B25BD7001000001 /* CodexQuotaClient.swift */,
+				A5MCP060 /* MCP */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -952,6 +1001,7 @@
 				6C7DB6E124E80F5100133B06 /* PreferenceComponentsView.swift */,
 				6C7DB6E324E80F9400133B06 /* PreferenceDisplayView.swift */,
 				6CC0798B250CD793000D7DAC /* PreferenceGeneralView.swift */,
+				A5MCP044 /* PreferenceMcpView.swift */,
 				6C5FBD4D253C7A060016F3A2 /* PreferenceMenuViewView.swift */,
 				6CE33C7E25260E3D00831857 /* PreferenceRefreshRateView.swift */,
 				6CDBB4C0254462B100D01EA0 /* PreferenceSectionView.swift */,
@@ -1042,6 +1092,7 @@
 				6C387DC6253B08F100CBB81B /* NetworkTopStore.swift */,
 				6C7DB6DB24E7FFE300133B06 /* PreferenceStore.swift */,
 				A5E2C00125BD7001000001 /* QuotaStore.swift */,
+				A5MCP040 /* McpStore.swift */,
 				6C192532256D5984006B0D73 /* SharedStore.swift */,
 				6C457391253AC69E00BB2584 /* UIStore.swift */,
 				62F2125825BBF5B700642EE8 /* TopStore.swift */,
@@ -1086,6 +1137,7 @@
 				6C993B8B25178D3B00586C6B /* MemoryMenuBlockView.swift */,
 				6C387DC8253B1A8000CBB81B /* NetworkMenuBlockMenuView.swift */,
 				A5E2C00325BD7001000001 /* QuotaMenuBlockView.swift */,
+				A5MCP042 /* McpMenuBlockView.swift */,
 				6C33CEC82517634400345977 /* StatusMenuView.swift */,
 			);
 			path = Menu;
@@ -1220,6 +1272,7 @@
 				6CE7969225166916008BEB2B /* SwiftyJSON */,
 				6C07E8A725167DBF00F728F9 /* LaunchAtLogin */,
 				6CF28D0825168B8200EBE9CB /* SystemKit */,
+				A5MCP051 /* MCP */,
 			);
 			productName = eul;
 			productReference = 6C5F853B249FACE000CF0EF8 /* eul.app */;
@@ -1380,6 +1433,7 @@
 				6CE7969125166916008BEB2B /* XCRemoteSwiftPackageReference "SwiftyJSON" */,
 				6C07E8A625167DBF00F728F9 /* XCRemoteSwiftPackageReference "LaunchAtLogin" */,
 				6CF28D0725168B8200EBE9CB /* XCRemoteSwiftPackageReference "SystemKit" */,
+				A5MCP070 /* XCRemoteSwiftPackageReference "swift-sdk" */,
 			);
 			productRefGroup = 6C5F853C249FACE000CF0EF8 /* Products */;
 			projectDirPath = "";
@@ -1589,6 +1643,20 @@
 				A5E2C00825BD7001000001 /* CursorQuotaClient.swift in Sources */,
 				A5E2C00A25BD7001000001 /* GrokQuotaClient.swift in Sources */,
 				A5E2C00C25BD7001000001 /* CodexQuotaClient.swift in Sources */,
+				A5MCP011 /* main.swift in Sources */,
+				A5MCP021 /* McpPaths.swift in Sources */,
+				A5MCP023 /* McpCatalog.swift in Sources */,
+				A5MCP025 /* McpCallLog.swift in Sources */,
+				A5MCP027 /* ProcessStdioTransport.swift in Sources */,
+				A5MCP029 /* McpUpstream.swift in Sources */,
+				A5MCP031 /* McpAggregator.swift in Sources */,
+				A5MCP033 /* McpLoopbackHTTP.swift in Sources */,
+				A5MCP035 /* McpHub.swift in Sources */,
+				A5MCP037 /* McpConnectCLI.swift in Sources */,
+				A5MCP039 /* McpAgentWriter.swift in Sources */,
+				A5MCP041 /* McpStore.swift in Sources */,
+				A5MCP043 /* McpMenuBlockView.swift in Sources */,
+				A5MCP045 /* PreferenceMcpView.swift in Sources */,
 				6C572D7F254EFD4700EF9904 /* DiskStore.swift in Sources */,
 				6C321FC025B5C8EF00BFED76 /* BluetoothMenuBlockView.swift in Sources */,
 				6CFAB7FC25BC12E1002F5F48 /* MenuInfoView.swift in Sources */,
@@ -1908,7 +1976,7 @@
 				CODE_SIGN_ENTITLEMENTS = MemoryWidget/MemoryWidget.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 70;
+				CURRENT_PROJECT_VERSION = 71;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = MemoryWidget/Info.plist;
@@ -1918,7 +1986,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 2.1.0;
+				MARKETING_VERSION = 2.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.wendyeq.eul2.MemoryWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1934,7 +2002,7 @@
 				CODE_SIGN_ENTITLEMENTS = MemoryWidget/MemoryWidget.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 70;
+				CURRENT_PROJECT_VERSION = 71;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = MemoryWidget/Info.plist;
@@ -1944,7 +2012,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 2.1.0;
+				MARKETING_VERSION = 2.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.wendyeq.eul2.MemoryWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1960,7 +2028,7 @@
 				CODE_SIGN_ENTITLEMENTS = NetworkWidget/NetworkWidget.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 70;
+				CURRENT_PROJECT_VERSION = 71;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = NetworkWidget/Info.plist;
@@ -1970,7 +2038,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 2.1.0;
+				MARKETING_VERSION = 2.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.wendyeq.eul2.NetworkWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1986,7 +2054,7 @@
 				CODE_SIGN_ENTITLEMENTS = NetworkWidget/NetworkWidget.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 70;
+				CURRENT_PROJECT_VERSION = 71;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = NetworkWidget/Info.plist;
@@ -1996,7 +2064,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 2.1.0;
+				MARKETING_VERSION = 2.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.wendyeq.eul2.NetworkWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -2134,7 +2202,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 70;
+				CURRENT_PROJECT_VERSION = 71;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -2146,7 +2214,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 2.1.0;
+				MARKETING_VERSION = 2.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.wendyeq.eul2;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "";
@@ -2165,7 +2233,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 70;
+				CURRENT_PROJECT_VERSION = 71;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -2177,7 +2245,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 2.1.0;
+				MARKETING_VERSION = 2.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.wendyeq.eul2;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "";
@@ -2193,7 +2261,7 @@
 				CODE_SIGN_ENTITLEMENTS = BatteryWidget/BatteryWidget.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 70;
+				CURRENT_PROJECT_VERSION = 71;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = BatteryWidget/Info.plist;
@@ -2203,7 +2271,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 2.1.0;
+				MARKETING_VERSION = 2.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.wendyeq.eul2.BatteryWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -2219,7 +2287,7 @@
 				CODE_SIGN_ENTITLEMENTS = BatteryWidget/BatteryWidget.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 70;
+				CURRENT_PROJECT_VERSION = 71;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = BatteryWidget/Info.plist;
@@ -2229,7 +2297,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 2.1.0;
+				MARKETING_VERSION = 2.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.wendyeq.eul2.BatteryWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -2245,7 +2313,7 @@
 				CODE_SIGN_ENTITLEMENTS = CpuWidget/CpuWidget.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 70;
+				CURRENT_PROJECT_VERSION = 71;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = CpuWidget/Info.plist;
@@ -2255,7 +2323,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 2.1.0;
+				MARKETING_VERSION = 2.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.wendyeq.eul2.CpuWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -2271,7 +2339,7 @@
 				CODE_SIGN_ENTITLEMENTS = CpuWidget/CpuWidget.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 70;
+				CURRENT_PROJECT_VERSION = 71;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = CpuWidget/Info.plist;
@@ -2281,7 +2349,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 2.1.0;
+				MARKETING_VERSION = 2.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.wendyeq.eul2.CpuWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -2345,7 +2413,7 @@
 				CODE_SIGN_ENTITLEMENTS = GpuWidget/GpuWidget.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 70;
+				CURRENT_PROJECT_VERSION = 71;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = GpuWidget/Info.plist;
@@ -2355,7 +2423,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 2.1.0;
+				MARKETING_VERSION = 2.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.wendyeq.eul2.GpuWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -2371,7 +2439,7 @@
 				CODE_SIGN_ENTITLEMENTS = GpuWidget/GpuWidget.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 70;
+				CURRENT_PROJECT_VERSION = 71;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = GpuWidget/Info.plist;
@@ -2381,7 +2449,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 2.1.0;
+				MARKETING_VERSION = 2.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.wendyeq.eul2.GpuWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -2508,6 +2576,14 @@
 				minimumVersion = 0.0.12;
 			};
 		};
+		A5MCP070 /* XCRemoteSwiftPackageReference "swift-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/modelcontextprotocol/swift-sdk.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.12.1;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -2560,6 +2636,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 6CF28D0725168B8200EBE9CB /* XCRemoteSwiftPackageReference "SystemKit" */;
 			productName = SystemKit;
+		};
+		A5MCP051 /* MCP */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A5MCP070 /* XCRemoteSwiftPackageReference "swift-sdk" */;
+			productName = MCP;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

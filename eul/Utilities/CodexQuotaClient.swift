@@ -112,7 +112,7 @@ enum CodexQuotaClient {
                 "clientInfo": [
                     "name": "eul2",
                     "title": "eul2",
-                    "version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "2.1.0",
+                    "version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "2.2.0",
                 ],
             ]]),
             let _ = waitForResponse(reader: reader, id: 1, process: process),

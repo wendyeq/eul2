@@ -21,6 +21,7 @@ enum SharedStore {
     static let networkTop = NetworkTopStore()
     static let bluetooth = BluetoothStore()
     static let quota = QuotaStore()
+    static let mcp = McpStore()
     static let preference = PreferenceStore()
     static let ui = UIStore()
     static let components = ComponentsStore<EulComponent>(
@@ -71,6 +72,7 @@ extension View {
             .environmentObject(SharedStore.disk)
             .environmentObject(SharedStore.bluetooth)
             .environmentObject(SharedStore.quota)
+            .environmentObject(SharedStore.mcp)
             .environmentObject(SharedStore.preference)
             .environmentObject(SharedStore.components)
             .environmentObject(SharedStore.menuComponents)

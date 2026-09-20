@@ -71,6 +71,7 @@ class PreferenceStore: ObservableObject {
     @Published var isUpdateAvailable: Bool? = false
     @Published var checkUpdateFailed = true
     @Published var appearanceMode = Preference.appearance.auto
+    @Published var mcpHubEnabled = false
 
     var json: JSON {
         JSON([
@@ -93,6 +94,7 @@ class PreferenceStore: ObservableObject {
             "checkStatusItemVisibility": checkStatusItemVisibility,
             "appearance": appearanceMode.rawValue,
             "upgradeMethod": upgradeMethod.rawValue,
+            "mcpHubEnabled": mcpHubEnabled,
 
         ])
     }
@@ -255,6 +257,9 @@ class PreferenceStore: ObservableObject {
                 }
                 if let raw = data["upgradeMethod"].string, let value = UpgradeMethod(rawValue: raw) {
                     upgradeMethod = value
+                }
+                if let value = data["mcpHubEnabled"].bool {
+                    mcpHubEnabled = value
                 }
             } catch {
                 print("Unable to get preference data from user defaults")

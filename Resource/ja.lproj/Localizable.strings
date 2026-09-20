@@ -280,3 +280,20 @@
 "widget.network.description" = "ネットワークの情報を表示します。";
 "widget.gpu.title" = "GPU";
 "widget.gpu.description" = "GPUの情報を表示します。";
+
+// MARK: MCP
+
+"component.mcp" = "MCP";
+"ui.mcp" = "MCP";
+"mcp.hub_enabled" = "MCP Hub";
+"mcp.connect_agents" = "Connect Agents";
+"mcp.open_catalog" = "Open Config File";
+"mcp.listening" = "Listening";
+"mcp.stopped" = "Stopped";
+"mcp.failed" = "Failed";
+"mcp.never" = "Never";
+"mcp.empty" = "No servers";
+"mcp.connect_ok" = "Agents connected";
+"mcp.connect_failed" = "Connect failed:";
+"mcp.seconds_ago" = "%ds ago";
+"mcp.minutes_ago" = "%dm ago";

@@ -2,6 +2,20 @@
 
 本分支基于 [gao-sun/eul](https://github.com/gao-sun/eul) 继续开发。上游最后广泛使用的 Intel 版本为 **[1.6.2](https://github.com/gao-sun/eul/releases/tag/1.6.2)**。
 
+## [2.2.0] — 2026-09-20
+
+面向 **Apple Silicon（arm64）**、**macOS 13+**。营销版本 **2.2.0**（build 71）。安装仍为 **`eul2.app`** / `com.wendyeq.eul2`。ad-hoc 签名，首次需右键打开。
+
+### MCP 中枢
+
+- 一份 MCP 目录：`$HOME/Library/Application Support/eul2/mcp-catalog.json`（`0600`）；本地回环只服务本机，默认 `127.0.0.1:18732/mcp`。
+- 五个 agent 只连接一次：入口名 **`eul2-mcp`**。Cursor / Claude Desktop / Claude Code 走 `eul mcp-connect`；Codex / Grok 走 HTTP。
+- 「连接 agent」只 upsert `eul2-mcp`，不删用户已有的 `mcp-router` 等其它条目。
+- 工具对外名 **`{id}--{原名}`**（如 `gitnexus--list_repos`），避免 Grok 再套 `eul2-mcp__…` 时出现第二段 `__`。
+- 偏好侧栏一级栏目 **MCP**：总开关默认关、连接 agent、打开配置文件、按 server 开关。无添加表单、无 MCP Router JSON 导入。
+- 菜单 MCP 块（默认不展示，在菜单视图中添加）：标题旁显示已监听 / 已停止 / 失败；各 server 上次调用相对时间。
+- 无参数调用记录：`$HOME/Library/Application Support/eul2/mcp-calls.jsonl`。删掉 `eul2.app` 后目录和 JSONL 仍在。
+
 ## [2.1.0] — 2026-09-19
 
 面向 **Apple Silicon（arm64）**、**macOS 13+**。营销版本 **2.1.0**（build 70）。安装仍为 **`eul2.app`** / `com.wendyeq.eul2`。ad-hoc 签名，首次需右键打开。

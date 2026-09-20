@@ -12,7 +12,6 @@ import Localize_Swift
 import SharedLibrary
 import SwiftUI
 
-@NSApplicationMain
 class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var isSleeping = false
     private var updateMethodCancellable: AnyCancellable?
@@ -74,6 +73,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
         SmcControl.shared.subscribe()
         StatusBarManager.shared.checkVisibilityIfNeeded()
+        if preferenceStore.mcpHubEnabled {
+            SharedStore.mcp.applyEnabled(true)
+        }
         wakeUp()
 
         let notificationCenter = NSWorkspace.shared.notificationCenter
@@ -102,7 +104,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func applicationShouldTerminate(_: NSApplication) -> NSApplication.TerminateReply {
         print("🤚 should terminate")
         SmcControl.shared.close()
-        return .terminateNow
+        Task {
+            await McpHub.shared.stop()
+            await MainActor.run {
+                NSApp.reply(toApplicationShouldTerminate: true)
+            }
+        }
+        return .terminateLater
     }
 
     func wakeUp() {

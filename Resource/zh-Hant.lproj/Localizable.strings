@@ -281,3 +281,20 @@
 "widget.network.description" = "顯示網路相關訊息";
 "widget.gpu.title" = "GPU 小工具";
 "widget.gpu.description" = "顯示 GPU 相關訊息";
+
+// MARK: MCP
+
+"component.mcp" = "MCP";
+"ui.mcp" = "MCP";
+"mcp.hub_enabled" = "MCP 中枢";
+"mcp.connect_agents" = "连接 agent";
+"mcp.open_catalog" = "打开配置文件";
+"mcp.listening" = "已监听";
+"mcp.stopped" = "未启动";
+"mcp.failed" = "失败";
+"mcp.never" = "从未";
+"mcp.empty" = "没有 server";
+"mcp.connect_ok" = "已连接 agent";
+"mcp.connect_failed" = "连接失败：";
+"mcp.seconds_ago" = "%d秒前";
+"mcp.minutes_ago" = "%d分钟前";

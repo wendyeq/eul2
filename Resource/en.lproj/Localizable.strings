@@ -292,3 +292,20 @@
 "widget.gpu.title" = "GPU Widget";
 "widget.gpu.description" = "Display GPU information";
 "accessibility.usage_history" = "Usage history";
+
+// MARK: MCP
+
+"component.mcp" = "MCP";
+"ui.mcp" = "MCP";
+"mcp.hub_enabled" = "MCP Hub";
+"mcp.connect_agents" = "Connect Agents";
+"mcp.open_catalog" = "Open Config File";
+"mcp.listening" = "Listening";
+"mcp.stopped" = "Stopped";
+"mcp.failed" = "Failed";
+"mcp.never" = "Never";
+"mcp.empty" = "No servers";
+"mcp.connect_ok" = "Agents connected";
+"mcp.connect_failed" = "Connect failed:";
+"mcp.seconds_ago" = "%ds ago";
+"mcp.minutes_ago" = "%dm ago";
