@@ -2,6 +2,15 @@
 
 本分支基于 [gao-sun/eul](https://github.com/gao-sun/eul) 继续开发。上游最后广泛使用的 Intel 版本为 **[1.6.2](https://github.com/gao-sun/eul/releases/tag/1.6.2)**。
 
+## [2.2.1] — unreleased
+
+面向 **Apple Silicon（arm64）**、**macOS 13+**。尚未发 GitHub Release / tag。安装仍为 **`eul2.app`** / `com.wendyeq.eul2`。
+
+### MCP 中枢
+
+- 打开中枢后先听 `127.0.0.1:18732`，不再等上游握手；单个 server 握手超过 60 秒记失败，不拖住端口。
+- 偏好 MCP 与菜单中每个 server 独立显示：连接中 / 已连接 / 失败 / 未连接。中枢「已监听」只表示端口，不代表 gitnexus / playwright 都连上。
+
 ## [2.2.0] — 2026-09-20
 
 面向 **Apple Silicon（arm64）**、**macOS 13+**。营销版本 **2.2.0**（build 71）。安装仍为 **`eul2.app`** / `com.wendyeq.eul2`。ad-hoc 签名，首次需右键打开。

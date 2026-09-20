@@ -9,6 +9,12 @@ struct McpUpstreamClient {
 }
 
 enum McpUpstream {
+    struct TimeoutError: Error, LocalizedError {
+        var errorDescription: String? { "connect timeout" }
+    }
+
+    static let connectTimeoutNanoseconds: UInt64 = 60_000_000_000
+
     static func connect(_ entry: McpServerEntry, onProcessExit: (@Sendable (Process) -> Void)? = nil) async throws -> McpUpstreamClient {
         let client = Client(name: "eul2", version: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "2.2.0")
         if entry.isRemote {
@@ -22,7 +28,9 @@ enum McpUpstream {
                 }
                 return modified
             }
-            _ = try await client.connect(transport: transport)
+            try await withTimeout(kill: nil) {
+                _ = try await client.connect(transport: transport)
+            }
             return McpUpstreamClient(id: entry.id, client: client, process: nil)
         }
         guard let command = entry.command, !command.isEmpty else {
@@ -66,8 +74,35 @@ enum McpUpstream {
                 }
             }
         }
-        _ = try await client.connect(transport: transport)
+        try await withTimeout(kill: process) {
+            _ = try await client.connect(transport: transport)
+        }
         connected = true
         return McpUpstreamClient(id: entry.id, client: client, process: process)
+    }
+
+    private static func withTimeout(kill process: Process?, _ body: @escaping @Sendable () async throws -> Void) async throws {
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            group.addTask {
+                try await body()
+            }
+            group.addTask {
+                try await Task.sleep(nanoseconds: connectTimeoutNanoseconds)
+                process?.terminationHandler = nil
+                if process?.isRunning == true {
+                    process?.terminate()
+                }
+                throw TimeoutError()
+            }
+            do {
+                _ = try await group.next()
+            } catch {
+                group.cancelAll()
+                while let _ = await group.nextResult() {}
+                throw error
+            }
+            group.cancelAll()
+            while let _ = await group.nextResult() {}
+        }
     }
 }

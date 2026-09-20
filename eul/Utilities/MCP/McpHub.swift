@@ -9,6 +9,7 @@ actor McpHub {
     private var listening = false
     private var lastError: String?
     private var running = false
+    private var generation = 0
     private var connectedEntries: [String: McpServerEntry] = [:]
     private var crashRelaunchUsed: Set<String> = []
     private var connecting: Set<String> = []
@@ -28,7 +29,7 @@ actor McpHub {
             listening: listening,
             lastError: lastError,
             port: catalog.listenPort,
-            servers: await aggregator.snapshot(catalog: catalog)
+            servers: await aggregator.snapshot(catalog: catalog, connecting: connecting)
         )
     }
 
@@ -41,6 +42,7 @@ actor McpHub {
             return
         }
         running = true
+        generation += 1
         await aggregator.setOnActivity {
             Task { await McpHub.shared.notifySoon() }
         }
@@ -53,6 +55,7 @@ actor McpHub {
     }
 
     func stop() async {
+        generation += 1
         running = false
         notifyTask?.cancel()
         await aggregator.setOnActivity(nil)
@@ -98,6 +101,25 @@ actor McpHub {
             }
         }
 
+        if restartHTTP || !listening {
+            do {
+                try await http.start(port: catalog.listenPort)
+                listening = true
+                lastError = nil
+            } catch {
+                listening = false
+                lastError = error.localizedDescription
+                await aggregator.replaceClients([])
+                connectedEntries.removeAll()
+                crashRelaunchUsed.removeAll()
+                connecting.removeAll()
+                notify()
+                return
+            }
+            notify()
+        }
+
+        let gen = generation
         for entry in enabled {
             if connecting.contains(entry.id) {
                 continue
@@ -120,35 +142,8 @@ actor McpHub {
             if current != nil {
                 await aggregator.removeClient(id: entry.id)
             }
-            if let client = await connectWithRetry(entry) {
-                await aggregator.putClient(client)
-                connectedEntries[entry.id] = entry
-                crashRelaunchUsed.remove(entry.id)
-                connecting.remove(entry.id)
-                await aggregator.clearFailed(id: entry.id)
-                if let process = client.process, !process.isRunning {
-                    await handleUpstreamExit(id: entry.id, process: process)
-                }
-            } else {
-                connectedEntries[entry.id] = nil
-                crashRelaunchUsed.remove(entry.id)
-                connecting.remove(entry.id)
-            }
-        }
-
-        if restartHTTP || !listening {
-            do {
-                try await http.start(port: catalog.listenPort)
-                listening = true
-                lastError = nil
-            } catch {
-                listening = false
-                lastError = error.localizedDescription
-                await aggregator.replaceClients([])
-                connectedEntries.removeAll()
-                crashRelaunchUsed.removeAll()
-                notify()
-                return
+            Task {
+                await self.finishConnect(entry: entry, generation: gen)
             }
         }
 
@@ -158,9 +153,49 @@ actor McpHub {
         notify()
     }
 
+    private func finishConnect(entry: McpServerEntry, generation gen: Int) async {
+        let client = await connectWithRetry(entry)
+        defer { connecting.remove(entry.id) }
+        guard running, generation == gen else {
+            discard(client)
+            return
+        }
+        guard catalog.servers.contains(where: { $0.id == entry.id && $0.enabled }) else {
+            discard(client)
+            return
+        }
+        if let client {
+            await aggregator.putClient(client)
+            connectedEntries[entry.id] = entry
+            crashRelaunchUsed.remove(entry.id)
+            await aggregator.clearFailed(id: entry.id)
+            if let process = client.process, !process.isRunning {
+                await handleUpstreamExit(id: entry.id, process: process)
+            }
+            await http.notifyToolsListChanged()
+        } else {
+            connectedEntries[entry.id] = nil
+            crashRelaunchUsed.remove(entry.id)
+        }
+        notify()
+    }
+
+    private func discard(_ client: McpUpstreamClient?) {
+        guard let process = client?.process else {
+            return
+        }
+        process.terminationHandler = nil
+        if process.isRunning {
+            process.terminate()
+        }
+    }
+
     private func connectWithRetry(_ entry: McpServerEntry) async -> McpUpstreamClient? {
         do {
             return try await connectEntry(entry)
+        } catch is McpUpstream.TimeoutError {
+            await aggregator.markFailed(id: entry.id, message: "connect timeout")
+            return nil
         } catch {
             do {
                 return try await connectEntry(entry)

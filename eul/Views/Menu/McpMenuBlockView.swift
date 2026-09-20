@@ -57,20 +57,6 @@ struct McpMenuBlockView: View {
     }
 
     private func statusText(_ server: McpServerStatus, now: Date) -> String {
-        if let error = server.lastError, !error.isEmpty {
-            return "mcp.failed".localized()
-        }
-        if let date = server.lastCallAt {
-            return relative(date, now: now)
-        }
-        return "mcp.never".localized()
-    }
-
-    private func relative(_ date: Date, now: Date) -> String {
-        let seconds = max(0, Int(now.timeIntervalSince(date)))
-        if seconds < 60 {
-            return String(format: "mcp.seconds_ago".localized(), seconds)
-        }
-        return String(format: "mcp.minutes_ago".localized(), seconds / 60)
+        server.statusText(now: now)
     }
 }

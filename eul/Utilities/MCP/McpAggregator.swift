@@ -64,14 +64,16 @@ actor McpAggregator {
         }
     }
 
-    func snapshot(catalog: McpCatalog) -> [McpServerStatus] {
+    func snapshot(catalog: McpCatalog, connecting: Set<String>) -> [McpServerStatus] {
         let logged = McpCallLog.latestCallDates()
         return catalog.servers.map { entry in
             McpServerStatus(
                 id: entry.id,
                 enabled: entry.enabled,
                 lastCallAt: lastCall[entry.id] ?? logged[entry.id],
-                lastError: lastError[entry.id]
+                lastError: lastError[entry.id],
+                connected: clients[entry.id] != nil,
+                connecting: connecting.contains(entry.id)
             )
         }
     }
@@ -216,4 +218,33 @@ struct McpServerStatus: Identifiable, Equatable {
     var enabled: Bool
     var lastCallAt: Date?
     var lastError: String?
+    var connected: Bool
+    var connecting: Bool
+
+    func statusText(now: Date, showsErrorDetail: Bool = false) -> String {
+        if connecting {
+            return "mcp.connecting".localized()
+        }
+        if let lastError, !lastError.isEmpty {
+            if showsErrorDetail {
+                return "mcp.failed".localized() + " · \(lastError)"
+            }
+            return "mcp.failed".localized()
+        }
+        if connected {
+            if let lastCallAt {
+                return Self.relative(lastCallAt, now: now)
+            }
+            return "mcp.connected".localized()
+        }
+        return "mcp.disconnected".localized()
+    }
+
+    private static func relative(_ date: Date, now: Date) -> String {
+        let seconds = max(0, Int(now.timeIntervalSince(date)))
+        if seconds < 60 {
+            return String(format: "mcp.seconds_ago".localized(), seconds)
+        }
+        return String(format: "mcp.minutes_ago".localized(), seconds / 60)
+    }
 }

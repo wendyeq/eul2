@@ -32,14 +32,25 @@ extension Preference {
                 if !mcpStore.servers.isEmpty {
                     PreferenceInsetFormGroup {
                         ForEach(Array(mcpStore.servers.enumerated()), id: \.element.id) { index, server in
-                            PreferenceFormSwitchRow(
-                                title: server.id,
-                                isOn: Binding(
+                            PreferenceFormSplitRow(
+                                showsDivider: index < mcpStore.servers.count - 1,
+                                trailingSlotWidth: PreferenceChrome.formTrailingSwitchSlotWidth
+                            ) {
+                                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                                    Text(server.id)
+                                        .preferenceFormLabel()
+                                    Text(server.statusText(now: Date(), showsErrorDetail: true))
+                                        .secondaryDisplayText()
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.7)
+                                }
+                            } control: {
+                                Toggle("", isOn: Binding(
                                     get: { server.enabled },
                                     set: { mcpStore.setServerEnabled(id: server.id, enabled: $0) }
-                                ),
-                                showsDivider: index < mcpStore.servers.count - 1
-                            )
+                                ))
+                                    .preferenceFormTrailingSwitch()
+                            }
                         }
                     }
                 }

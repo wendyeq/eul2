@@ -244,6 +244,9 @@ Copyright © 2020 Gao Sun. All rights reserved.
 "mcp.stopped" = "Stopped";
 "mcp.failed" = "Failed";
 "mcp.never" = "Never";
+"mcp.connected" = "Connected";
+"mcp.connecting" = "Connecting";
+"mcp.disconnected" = "Not connected";
 "mcp.empty" = "No servers";
 "mcp.connect_ok" = "Agents connected";
 "mcp.connect_failed" = "Connect failed:";

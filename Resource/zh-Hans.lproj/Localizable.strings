@@ -305,6 +305,9 @@
 "mcp.stopped" = "未启动";
 "mcp.failed" = "失败";
 "mcp.never" = "从未";
+"mcp.connected" = "已连接";
+"mcp.connecting" = "连接中";
+"mcp.disconnected" = "未连接";
 "mcp.empty" = "没有 server";
 "mcp.connect_ok" = "已连接 agent";
 "mcp.connect_failed" = "连接失败：";
