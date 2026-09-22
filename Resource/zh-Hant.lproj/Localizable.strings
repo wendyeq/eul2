@@ -301,3 +301,8 @@
 "mcp.connect_failed" = "连接失败：";
 "mcp.seconds_ago" = "%d秒前";
 "mcp.minutes_ago" = "%d分钟前";
+"mcp.hours_ago" = "%d小時前";
+"mcp.days_ago" = "%d天前";
+"mcp.weeks_ago" = "%d週前";
+"mcp.months_ago" = "%d個月前";
+"mcp.years_ago" = "%d年前";

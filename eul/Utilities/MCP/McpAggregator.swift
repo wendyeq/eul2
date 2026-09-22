@@ -213,6 +213,61 @@ actor McpAggregator {
     }
 }
 
+enum McpElapsedUnit: Equatable {
+    case seconds(Int)
+    case minutes(Int)
+    case hours(Int)
+    case days(Int)
+    case weeks(Int)
+    case months(Int)
+    case years(Int)
+
+    var localizationKey: String {
+        switch self {
+        case .seconds: return "mcp.seconds_ago"
+        case .minutes: return "mcp.minutes_ago"
+        case .hours: return "mcp.hours_ago"
+        case .days: return "mcp.days_ago"
+        case .weeks: return "mcp.weeks_ago"
+        case .months: return "mcp.months_ago"
+        case .years: return "mcp.years_ago"
+        }
+    }
+
+    var count: Int {
+        switch self {
+        case let .seconds(count), let .minutes(count), let .hours(count), let .days(count),
+             let .weeks(count), let .months(count), let .years(count):
+            return count
+        }
+    }
+
+    // Cutovers match RelativeDateTimeFormatter.UnitsStyle.abbreviated.
+    static func from(seconds raw: Int) -> McpElapsedUnit {
+        let seconds = max(0, raw)
+        if seconds < 60 {
+            return .seconds(seconds)
+        }
+        if seconds < 3600 {
+            return .minutes(seconds / 60)
+        }
+        if seconds < 86400 {
+            return .hours(seconds / 3600)
+        }
+        let days = seconds / 86400
+        if days < 7 {
+            return .days(days)
+        }
+        if days < 31 {
+            return .weeks(days / 7)
+        }
+        if days < 365 {
+            return .months(days / 31)
+        }
+        return .years(days / 365)
+    }
+}
+
 struct McpServerStatus: Identifiable, Equatable {
     var id: String
     var enabled: Bool
@@ -241,10 +296,7 @@ struct McpServerStatus: Identifiable, Equatable {
     }
 
     private static func relative(_ date: Date, now: Date) -> String {
-        let seconds = max(0, Int(now.timeIntervalSince(date)))
-        if seconds < 60 {
-            return String(format: "mcp.seconds_ago".localized(), seconds)
-        }
-        return String(format: "mcp.minutes_ago".localized(), seconds / 60)
+        let unit = McpElapsedUnit.from(seconds: Int(now.timeIntervalSince(date)))
+        return String(format: unit.localizationKey.localized(), unit.count)
     }
 }
