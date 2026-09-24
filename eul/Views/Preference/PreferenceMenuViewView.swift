@@ -6,286 +6,189 @@
 //  Copyright © 2020 Gao Sun. All rights reserved.
 //
 
+import AppKit
 import SwiftUI
 
 extension Preference {
     struct PreferenceMenuViewView: View {
-        private let coordinateSpace = "MenuComponentsOrdering"
         private let quotaCoordinateSpace = "QuotaProvidersOrdering"
+        private let hardwareCoordinateSpace = "HardwareComponentsOrdering"
         @EnvironmentObject var preference: PreferenceStore
         @EnvironmentObject var componentsStore: ComponentsStore<EulMenuComponent>
-        @State var dragging: EulMenuComponent?
-        @State var frames: [CGRect] = .init(repeating: .zero, count: EulMenuComponent.allCases.count)
-        @GestureState var offsetHeight: CGFloat = 0
-        @State var draggingQuota: Preference.QuotaProvider?
-        @State var quotaDragOrigin: Int?
-        @State var quotaDragTranslation: CGFloat = 0
-        @State var quotaFrames: [CGRect] = .init(repeating: .zero, count: Preference.QuotaProvider.allCases.count)
+        @State private var editingMenuTab: PreferenceStore.MenuTab = .hardware
 
-        func updateFrame(geometry: GeometryProxy, index: Int) -> some View {
-            Color.clear.preference(
-                key: FramePreferenceKey.self,
-                value: componentsStore.isActiveComponentToggling
-                    ? []
-                    : [FramePreferenceData(index: index, frame: geometry.frame(in: CoordinateSpace.named(coordinateSpace)))]
-            )
-        }
-
-        func updateQuotaFrame(geometry: GeometryProxy, index: Int) -> some View {
-            Color.clear.preference(
-                key: QuotaFramePreferenceKey.self,
-                value: [FramePreferenceData(index: index, frame: geometry.frame(in: CoordinateSpace.named(quotaCoordinateSpace)))]
+        private func componentBinding(_ component: EulMenuComponent) -> Binding<Bool> {
+            Binding(
+                get: { componentsStore.activeComponents.contains(component) },
+                set: { componentsStore.setActive(component, enabled: $0) }
             )
         }
 
         var body: some View {
             VStack(alignment: .leading, spacing: 12) {
                 PreferenceInsetFormGroup {
-                    PreferenceFormSwitchRow(
-                        title: "menu.show_cpu_top_activities".localized(),
-                        isOn: $preference.showCPUTopActivities,
-                        showsDivider: true
-                    )
-                    PreferenceFormSwitchRow(
-                        title: "menu.show_ram_top_activities".localized(),
-                        isOn: $preference.showRAMTopActivities,
-                        showsDivider: true
-                    )
-                    PreferenceFormSwitchRow(
-                        title: "menu.show_network_top_activities".localized(),
-                        isOn: $preference.showNetworkTopActivities,
-                        showsDivider: true
-                    )
                     PreferenceFormPickerRow(
-                        title: "cpu_display_mode".localized(),
-                        selection: $preference.cpuMenuDisplay,
+                        title: "menu.default_tab".localized(fallback: "Open menu on"),
+                        selection: $preference.defaultMenuTab,
                         showsDivider: false
                     ) {
-                        ForEach(Preference.CpuMenuDisplay.allCases, id: \.self) {
-                            Text($0.description)
-                                .tag($0)
+                        ForEach(PreferenceStore.MenuTab.allCases) { tab in
+                            Text(tab.title).tag(tab)
                         }
                     }
                 }
-                quotaProvidersSection
-                VStack(alignment: .leading, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text("ui.menu_view".localized())
-                                .subsection()
-                            Text("component.drag_to_reorder".localized())
-                                .subsection()
-                                .foregroundColor(Color.gray)
-                        }
-                        .fixedSize()
-                        VStack(spacing: 4) {
-                            if componentsStore.activeComponents.isEmpty {
-                                HStack {
-                                    Spacer()
-                                    Text("ui.empty".localized())
-                                        .secondaryDisplayText()
-                                    Spacer()
-                                }
-                            }
-                            ForEach(Array(componentsStore.activeComponents.enumerated()), id: \.element) { offset, element in
-                                HStack(spacing: 8) {
-                                    Image(element.rawValue)
-                                        .resizable()
-                                        .frame(width: 12, height: 12)
-                                    Text(element.localizedDescription)
-                                        .normal()
-                                        .fixedSize()
-                                    Spacer()
-                                    Image("X")
-                                        .resizable()
-                                        .frame(width: 8, height: 8)
-                                        .padding(.horizontal, 4)
-                                        .contentShape(Rectangle())
-                                        .foregroundColor(Color.gray)
-                                        .onHover {
-                                            guard self.dragging == nil else {
-                                                return
-                                            }
-                                            if $0 {
-                                                NSCursor.pointingHand.push()
-                                            } else {
-                                                NSCursor.pop()
-                                            }
-                                        }
-                                        .onTapGesture {
-                                            withAnimation(.fast) {
-                                                self.componentsStore.toggleActiveComponent(at: offset)
-                                            }
-                                        }
-                                        .padding(.trailing, -4)
-                                }
-                                .preferenceGroupedRowSurface()
-                                .offset(y: self.dragging == element ? self.offsetHeight : 0)
-                                .zIndex(self.dragging == element ? 1 : 0)
-                                .contentShape(Rectangle())
-                                .gesture(DragGesture()
-                                    .updating(self.$offsetHeight, body: { value, state, _ in
-                                        state = value.translation.height
-
-                                        let currentFrame = self.frames[offset]
-
-                                        if state > 0, offset < self.componentsStore.activeComponents.count - 1 {
-                                            let nextFrame = self.frames[offset + 1]
-
-                                            if currentFrame.maxY + state > (nextFrame.minY + nextFrame.maxY) / 2 {
-                                                DispatchQueue.main.async {
-                                                    self.componentsStore.activeComponents.swapAt(offset, offset + 1)
-                                                }
-                                            }
-                                        }
-
-                                        if state < 0, offset > 0 {
-                                            let prevFrame = self.frames[offset - 1]
-
-                                            if currentFrame.minY + state < (prevFrame.minY + prevFrame.maxY) / 2 {
-                                                DispatchQueue.main.async {
-                                                    self.componentsStore.activeComponents.swapAt(offset, offset - 1)
-                                                }
-                                            }
-                                        }
-                                    })
-                                    .onChanged { _ in
-                                        self.dragging = element
-                                    }
-                                    .onEnded { _ in
-                                        self.dragging = nil
-                                    }
-                                )
-                                .background(GeometryReader { geometry in
-                                    self.updateFrame(geometry: geometry, index: offset)
-                                })
-                            }
-                        }
-                        .preferenceGroupedListChrome()
-                        .clipped()
-                        .coordinateSpace(name: coordinateSpace)
-                        .frame(maxWidth: PreferenceChrome.detailContentWidth, alignment: .leading)
-                    }
-                    if componentsStore.availableComponents.count > 0 {
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                Text("component.available".localized())
-                                    .subsection()
-                                Text("component.click_to_append".localized())
-                                    .subsection()
-                                    .foregroundColor(Color.gray)
-                            }
-                            .fixedSize()
-                            VStack(spacing: 4) {
-                                ForEach(Array(componentsStore.availableComponents.enumerated()), id: \.element) { offset, element in
-                                    HStack(spacing: 8) {
-                                        Image(element.rawValue)
-                                            .resizable()
-                                            .frame(width: 12, height: 12)
-                                        Text(element.localizedDescription)
-                                            .normal()
-                                            .fixedSize()
-                                        Spacer()
-                                    }
-                                    .preferenceGroupedRowSurface()
-                                    .contentShape(Rectangle())
-                                    .onTapGesture {
-                                        withAnimation(.fast) {
-                                            self.componentsStore.toggleAvailableComponent(at: offset)
-                                        }
-                                    }
-                                }
-                            }
-                            .padding(8)
-                            .background(
-                                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                                    .stroke(Color.border, lineWidth: 1)
-                            )
-                            .clipped()
-                            .frame(maxWidth: PreferenceChrome.detailContentWidth, alignment: .leading)
-                        }
+                Picker("menu.configure_page".localized(fallback: "Configure page"), selection: $editingMenuTab) {
+                    ForEach(PreferenceStore.MenuTab.allCases) { tab in
+                        Text(tab.title).tag(tab)
                     }
                 }
-                .frame(maxWidth: PreferenceChrome.detailContentWidth, alignment: .leading)
+                .pickerStyle(.segmented)
+                .frame(maxWidth: PreferenceChrome.detailContentWidth)
+                switch editingMenuTab {
+                case .hardware:
+                    hardwareSection
+                case .quota:
+                    quotaProvidersSection
+                case .mcp:
+                    mcpSection
+                }
             }
             .padding(.vertical, 8)
-            .onPreferenceChange(FramePreferenceKey.self, perform: { value in
-                for data in value {
-                    self.frames[data.index] = data.frame
+        }
+
+        private var mcpSection: some View {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(PreferenceStore.MenuTab.mcp.title).subsection()
+                PreferenceInsetFormGroup {
+                    PreferenceFormSwitchRow(
+                        title: "menu.show_mcp".localized(fallback: "Show MCP page"),
+                        isOn: componentBinding(.MCP),
+                        showsDivider: false
+                    )
                 }
-            })
-            .onPreferenceChange(QuotaFramePreferenceKey.self, perform: { value in
-                for data in value {
-                    self.quotaFrames[data.index] = data.frame
+                Preference.McpView()
+            }
+        }
+
+        private var hardwareSection: some View {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(PreferenceStore.MenuTab.hardware.title).subsection()
+                PreferenceInsetFormGroup {
+                    PreferenceFormSwitchRow(
+                        title: "menu.show_hardware".localized(fallback: "Show hardware page"),
+                        isOn: $preference.showHardwareMenuTab,
+                        showsDivider: false
+                    )
                 }
-            })
+                if preference.showHardwareMenuTab {
+                    reorderHeader("menu.hardware_components".localized(fallback: "Hardware components"))
+                    PreferenceEnabledOrderList(
+                        items: preference.orderedHardwareComponents,
+                        coordinateSpace: hardwareCoordinateSpace,
+                        isOn: componentBinding,
+                        move: { preference.moveHardwareComponent(from: $0, to: $1) }
+                    ) { component in
+                        HStack(spacing: 8) {
+                            Image(component.rawValue)
+                                .resizable()
+                                .frame(width: 12, height: 12)
+                            Text(component.localizedDescription)
+                                .normal()
+                                .fixedSize()
+                        }
+                    } detail: { component in
+                        hardwareDetail(component)
+                    }
+                }
+            }
+            .frame(maxWidth: PreferenceChrome.detailContentWidth, alignment: .leading)
+        }
+
+        @ViewBuilder
+        private func hardwareDetail(_ component: EulMenuComponent) -> some View {
+            if componentsStore.activeComponents.contains(component) {
+                switch component {
+                case .CPU:
+                    VStack(spacing: 0) {
+                        PreferenceFormRowSeparator()
+                        PreferenceFormSwitchRow(
+                            title: "menu.show_cpu_top_activities".localized(),
+                            isOn: $preference.showCPUTopActivities,
+                            showsDivider: true
+                        )
+                        PreferenceFormPickerRow(
+                            title: "cpu_display_mode".localized(),
+                            selection: $preference.cpuMenuDisplay,
+                            showsDivider: false
+                        ) {
+                            ForEach(Preference.CpuMenuDisplay.allCases, id: \.self) {
+                                Text($0.description).tag($0)
+                            }
+                        }
+                    }
+                case .Memory:
+                    topActivityRow(
+                        "menu.show_ram_top_activities".localized(),
+                        isOn: $preference.showRAMTopActivities
+                    )
+                case .Network:
+                    topActivityRow(
+                        "menu.show_network_top_activities".localized(),
+                        isOn: $preference.showNetworkTopActivities
+                    )
+                default:
+                    EmptyView()
+                }
+            }
         }
 
         private var quotaProvidersSection: some View {
             VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("menu.quota_providers".localized())
-                        .subsection()
-                    Text("component.drag_to_reorder".localized())
-                        .subsection()
-                        .foregroundColor(Color.gray)
+                Text(PreferenceStore.MenuTab.quota.title).subsection()
+                PreferenceInsetFormGroup {
+                    PreferenceFormSwitchRow(
+                        title: "menu.show_quota".localized(fallback: "Show quota page"),
+                        isOn: componentBinding(.Quota),
+                        showsDivider: false
+                    )
                 }
-                .fixedSize()
-                VStack(spacing: 4) {
-                    ForEach(Array(preference.orderedQuotaProviders.enumerated()), id: \.element) { offset, provider in
-                        HStack(spacing: 8) {
-                            Image(systemName: "line.3.horizontal")
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundColor(Color.gray)
-                                .frame(width: 18, height: 22)
-                                .contentShape(Rectangle())
-                                .gesture(
-                                    DragGesture(minimumDistance: 2)
-                                        .onChanged { value in
-                                            if draggingQuota == nil {
-                                                draggingQuota = provider
-                                                quotaDragOrigin = offset
-                                            }
-                                            quotaDragTranslation = value.translation.height
-                                        }
-                                        .onEnded { value in
-                                            let origin = quotaDragOrigin ?? offset
-                                            let destination = quotaDropIndex(
-                                                from: origin,
-                                                translation: value.translation.height
-                                            )
-                                            if destination != origin {
-                                                preference.moveQuotaProvider(from: origin, to: destination)
-                                            }
-                                            draggingQuota = nil
-                                            quotaDragOrigin = nil
-                                            quotaDragTranslation = 0
-                                        }
-                                )
-                            Text(provider.titleKey.localized())
-                                .normal()
-                                .fixedSize()
-                            Spacer()
-                            Toggle("", isOn: quotaVisibilityBinding(provider))
-                                .toggleStyle(SwitchToggleStyle())
-                                .labelsHidden()
-                                .scaleEffect(0.85)
-                        }
-                        .preferenceGroupedRowSurface()
-                        .offset(y: quotaRowOffset(index: offset, provider: provider))
-                        .zIndex(draggingQuota == provider ? 1 : 0)
-                        .animation(nil, value: preference.quotaProviderOrder)
-                        .background(GeometryReader { geometry in
-                            updateQuotaFrame(geometry: geometry, index: offset)
-                        })
+                if componentsStore.activeComponents.contains(.Quota) {
+                    reorderHeader("menu.quota_providers".localized())
+                    PreferenceEnabledOrderList(
+                        items: preference.orderedQuotaProviders,
+                        coordinateSpace: quotaCoordinateSpace,
+                        isOn: quotaVisibilityBinding,
+                        move: { preference.moveQuotaProvider(from: $0, to: $1) }
+                    ) { provider in
+                        Text(provider.titleKey.localized())
+                            .normal()
+                            .fixedSize()
                     }
                 }
-                .preferenceGroupedListChrome()
-                .clipped()
-                .coordinateSpace(name: quotaCoordinateSpace)
-                .frame(maxWidth: PreferenceChrome.detailContentWidth, alignment: .leading)
             }
             .frame(maxWidth: PreferenceChrome.detailContentWidth, alignment: .leading)
+        }
+
+        private func reorderHeader(_ title: String) -> some View {
+            HStack {
+                Text(title)
+                    .subsection()
+                Text("component.drag_to_reorder".localized())
+                    .subsection()
+                    .foregroundColor(Color.gray)
+            }
+            .fixedSize()
+        }
+
+        private func topActivityRow(_ title: String, isOn: Binding<Bool>) -> some View {
+            VStack(spacing: 0) {
+                PreferenceFormRowSeparator()
+                PreferenceFormSwitchRow(
+                    title: title,
+                    isOn: isOn,
+                    showsDivider: false
+                )
+            }
         }
 
         private func quotaVisibilityBinding(_ provider: Preference.QuotaProvider) -> Binding<Bool> {
@@ -294,52 +197,206 @@ extension Preference {
                 set: { preference.setQuotaProviderVisible(provider, visible: $0) }
             )
         }
-
-        private func quotaRowSpan(around index: Int) -> CGFloat {
-            let frames = quotaFrames
-            guard frames.indices.contains(index), frames[index].height > 0 else {
-                return 36
-            }
-            if index + 1 < frames.count, frames[index + 1].height > 0 {
-                return abs(frames[index + 1].midY - frames[index].midY)
-            }
-            if index > 0, frames[index - 1].height > 0 {
-                return abs(frames[index].midY - frames[index - 1].midY)
-            }
-            return max(frames[index].height + 4, 36)
-        }
-
-        private func quotaDropIndex(from origin: Int, translation: CGFloat) -> Int {
-            let count = preference.orderedQuotaProviders.count
-            guard count > 0 else {
-                return origin
-            }
-            let span = max(quotaRowSpan(around: origin), 1)
-            let delta = Int((translation / span).rounded())
-            return min(count - 1, max(0, origin + delta))
-        }
-
-        private func quotaRowOffset(index: Int, provider: Preference.QuotaProvider) -> CGFloat {
-            guard let origin = quotaDragOrigin, draggingQuota != nil else {
-                return 0
-            }
-            if provider == draggingQuota {
-                return quotaDragTranslation
-            }
-            let destination = quotaDropIndex(from: origin, translation: quotaDragTranslation)
-            let span = quotaRowSpan(around: origin)
-            if origin < destination, index > origin, index <= destination {
-                return -span
-            }
-            if origin > destination, index >= destination, index < origin {
-                return span
-            }
-            return 0
-        }
     }
 }
 
-private struct QuotaFramePreferenceKey: PreferenceKey {
+struct PreferenceEnabledOrderList<Item: Hashable, Label: View, Detail: View>: View {
+    let items: [Item]
+    let coordinateSpace: String
+    let isOn: (Item) -> Binding<Bool>
+    let move: (Int, Int) -> Void
+    let label: (Item) -> Label
+    let detail: (Item) -> Detail
+
+    @State private var dragging: Item?
+    @State private var dragOrigin: Int?
+    @State private var dragTranslation: CGFloat = 0
+    @State private var draggedRowHeight: CGFloat = 0
+    @State private var dragMids: [CGFloat] = []
+    @State private var previewDestination: Int?
+    @State private var frames: [CGRect] = []
+
+    init(
+        items: [Item],
+        coordinateSpace: String,
+        isOn: @escaping (Item) -> Binding<Bool>,
+        move: @escaping (Int, Int) -> Void,
+        @ViewBuilder label: @escaping (Item) -> Label,
+        @ViewBuilder detail: @escaping (Item) -> Detail
+    ) {
+        self.items = items
+        self.coordinateSpace = coordinateSpace
+        self.isOn = isOn
+        self.move = move
+        self.label = label
+        self.detail = detail
+    }
+
+    var body: some View {
+        VStack(spacing: 4) {
+            ForEach(Array(items.enumerated()), id: \.element) { offset, item in
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(spacing: 8) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "line.3.horizontal")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(Color.gray)
+                                .frame(width: 18, height: 22)
+                            label(item)
+                            Spacer(minLength: 0)
+                        }
+                        .contentShape(Rectangle())
+                        .onHover { hovering in
+                            if dragging != nil {
+                                return
+                            }
+                            if hovering {
+                                NSCursor.openHand.set()
+                            } else {
+                                NSCursor.arrow.set()
+                            }
+                        }
+                        .gesture(rowDragGesture(item: item, offset: offset))
+                        Toggle("", isOn: isOn(item))
+                            .toggleStyle(SwitchToggleStyle())
+                            .labelsHidden()
+                            .scaleEffect(0.85)
+                    }
+                    detail(item)
+                }
+                .preferenceGroupedRowSurface()
+                .offset(y: rowOffset(index: offset, item: item))
+                .zIndex(dragging == item ? 1 : 0)
+                .shadow(color: dragging == item ? Color.black.opacity(0.16) : .clear, radius: dragging == item ? 5 : 0, y: 2)
+                .animation(dragging == item ? nil : .easeOut(duration: 0.16), value: previewDestination)
+                .background(GeometryReader { geometry in
+                    Color.clear.preference(
+                        key: OrderListFramePreferenceKey.self,
+                        value: [FramePreferenceData(
+                            index: offset,
+                            frame: geometry.frame(in: CoordinateSpace.named(coordinateSpace))
+                        )]
+                    )
+                })
+            }
+        }
+        .preferenceGroupedListChrome()
+        .coordinateSpace(name: coordinateSpace)
+        .frame(maxWidth: PreferenceChrome.detailContentWidth, alignment: .leading)
+        .onPreferenceChange(OrderListFramePreferenceKey.self) { value in
+            guard dragging == nil else {
+                return
+            }
+            var next = frames.count == items.count ? frames : Array(repeating: .zero, count: items.count)
+            for data in value where next.indices.contains(data.index) {
+                next[data.index] = data.frame
+            }
+            if next != frames {
+                frames = next
+            }
+        }
+    }
+
+    private func rowDragGesture(item: Item, offset: Int) -> some Gesture {
+        DragGesture(minimumDistance: 2, coordinateSpace: .named(coordinateSpace))
+            .onChanged { value in
+                let translation = value.translation.height
+                if dragging == nil {
+                    dragging = item
+                    dragOrigin = offset
+                    draggedRowHeight = frames.indices.contains(offset) ? max(frames[offset].height, 36) : 0
+                    dragMids = frames.map(\.midY)
+                    previewDestination = offset
+                    NSCursor.closedHand.set()
+                }
+                let destination = dropIndex(from: dragOrigin ?? offset, translation: translation)
+                withoutAnimation {
+                    dragTranslation = translation
+                }
+                if previewDestination != destination {
+                    previewDestination = destination
+                }
+            }
+            .onEnded { value in
+                let origin = dragOrigin ?? offset
+                let destination = dropIndex(from: origin, translation: value.translation.height)
+                withoutAnimation {
+                    if destination != origin {
+                        move(origin, destination)
+                    }
+                    dragging = nil
+                    dragOrigin = nil
+                    dragTranslation = 0
+                    draggedRowHeight = 0
+                    previewDestination = nil
+                }
+                NSCursor.arrow.set()
+            }
+    }
+
+    private func withoutAnimation(_ update: () -> Void) {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction, update)
+    }
+
+    private func dropIndex(from origin: Int, translation: CGFloat) -> Int {
+        guard items.indices.contains(origin), dragMids.indices.contains(origin) else {
+            return origin
+        }
+        let finger = dragMids[origin] + translation
+        var best = origin
+        var bestDistance = CGFloat.greatestFiniteMagnitude
+        for index in items.indices {
+            let mid = dragMids.indices.contains(index) ? dragMids[index] : dragMids[origin]
+            let distance = abs(finger - mid)
+            if distance < bestDistance {
+                best = index
+                bestDistance = distance
+            }
+        }
+        return best
+    }
+
+    private func rowOffset(index: Int, item: Item) -> CGFloat {
+        guard let origin = dragOrigin, dragging != nil, draggedRowHeight > 0 else {
+            return 0
+        }
+        if item == dragging {
+            return dragTranslation
+        }
+        let destination = previewDestination ?? origin
+        let height = draggedRowHeight
+        if origin < destination, index > origin, index <= destination {
+            return -height
+        }
+        if origin > destination, index >= destination, index < origin {
+            return height
+        }
+        return 0
+    }
+}
+
+extension PreferenceEnabledOrderList where Detail == EmptyView {
+    init(
+        items: [Item],
+        coordinateSpace: String,
+        isOn: @escaping (Item) -> Binding<Bool>,
+        move: @escaping (Int, Int) -> Void,
+        @ViewBuilder label: @escaping (Item) -> Label
+    ) {
+        self.init(
+            items: items,
+            coordinateSpace: coordinateSpace,
+            isOn: isOn,
+            move: move,
+            label: label,
+            detail: { _ in EmptyView() }
+        )
+    }
+}
+
+private struct OrderListFramePreferenceKey: PreferenceKey {
     typealias Value = [FramePreferenceData]
 
     static var defaultValue: [FramePreferenceData] = []

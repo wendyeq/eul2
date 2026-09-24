@@ -55,6 +55,14 @@ enum EulMenuComponent: String, CaseIterable, Identifiable, JSONCodabble {
     case Quota
     case MCP
 
+    var isHardware: Bool {
+        self != .Quota && self != .MCP
+    }
+
+    static var hardwareComponents: [EulMenuComponent] {
+        allCases.filter(\.isHardware)
+    }
+
     static var allCases: [EulMenuComponent] {
         [.CPU, .GPU]
             .appending(.Fan, condition: SmcControl.shared.isFanValid)

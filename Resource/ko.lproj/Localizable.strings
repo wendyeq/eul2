@@ -112,6 +112,7 @@ battery.timeRemaining = "Time Rem.";
 "menu.show_quota_grok" = "Show Grok quota";
 "menu.show_quota_codex" = "Show Codex quota";
 "menu.quota_providers" = "Quota providers";
+"menu.hardware_components" = "Hardware components";
 
 // MARK: Temperature
 "temp.temperature" = "온도";

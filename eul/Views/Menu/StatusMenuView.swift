@@ -28,24 +28,86 @@ struct StatusMenuView: SizeChangeView {
         return max(180, visible - 120)
     }
 
-    private var visibleMenuComponents: [EulMenuComponent] {
-        menuComponentsStore.activeComponents.filter { component in
-            guard component == .Quota else {
-                return true
-            }
-            return preferenceStore.showCursorQuota
-                || preferenceStore.showGrokQuota
-                || preferenceStore.showCodexQuota
+    private var availableMenuTabs: [PreferenceStore.MenuTab] {
+        var tabs: [PreferenceStore.MenuTab] = []
+        if preferenceStore.showHardwareMenuTab {
+            tabs.append(.hardware)
         }
+        if menuComponentsStore.activeComponents.contains(.Quota) {
+            tabs.append(.quota)
+        }
+        if menuComponentsStore.activeComponents.contains(.MCP) {
+            tabs.append(.mcp)
+        }
+        return tabs
+    }
+
+    private var selectedMenuTab: PreferenceStore.MenuTab? {
+        availableMenuTabs.contains(uiStore.selectedMenuTab) ? uiStore.selectedMenuTab : availableMenuTabs.first
+    }
+
+    private var visibleMenuComponents: [EulMenuComponent] {
+        switch selectedMenuTab {
+        case .none:
+            return []
+        case .hardware:
+            return preferenceStore.orderedHardwareComponents.filter {
+                menuComponentsStore.activeComponents.contains($0)
+            }
+        case .quota:
+            return preferenceStore.showCursorQuota || preferenceStore.showGrokQuota || preferenceStore.showCodexQuota
+                ? [.Quota] : []
+        case .mcp:
+            return [.MCP]
+        }
+    }
+
+    private var menuEmptyMessage: String {
+        if availableMenuTabs.isEmpty {
+            return "menu.tab.all_hidden".localized(fallback: "All menu pages are hidden. Open Settings to show one.")
+        }
+        return "menu.tab.empty".localized(fallback: "Nothing to show. Enable items in Menu View.")
+    }
+
+    private var menuTabs: some View {
+        HStack(spacing: 3) {
+            ForEach(availableMenuTabs) { tab in
+                Button {
+                    uiStore.selectedMenuTab = tab
+                } label: {
+                    Text(tab.title)
+                        .font(.system(size: 11, weight: .semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 7)
+                        .contentShape(Rectangle())
+                        .foregroundColor(selectedMenuTab == tab ? .primary : .secondary)
+                        .background {
+                            if selectedMenuTab == tab {
+                                RoundedRectangle(cornerRadius: 6).fill(Color.accentColor.opacity(0.22))
+                            }
+                        }
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(selectedMenuTab == tab ? [.isSelected] : [])
+            }
+        }
+        .padding(3)
+        .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
     }
 
     @ViewBuilder
     private var menuComponentsStack: some View {
-        ForEach(Array(visibleMenuComponents.enumerated()), id: \.element.id) { index, component in
-            if index > 0 {
-                SeparatorView(menuSection: expandedChrome)
+        if visibleMenuComponents.isEmpty {
+            Text(menuEmptyMessage)
+                .secondaryDisplayText()
+                .frame(maxWidth: .infinity, minHeight: 64)
+        } else {
+            ForEach(Array(visibleMenuComponents.enumerated()), id: \.element.id) { index, component in
+                if index > 0 {
+                    SeparatorView(menuSection: expandedChrome)
+                }
+                component.getView()
             }
-            component.getView()
         }
     }
 
@@ -93,6 +155,9 @@ struct StatusMenuView: SizeChangeView {
                     MenuActionTextView(id: "menu.quit", text: "menu.quit", action: AppDelegate.quit)
                 }
             }
+            if availableMenuTabs.count > 1 {
+                menuTabs
+            }
             if expandedChrome {
                 ScrollView(.vertical, showsIndicators: true) {
                     VStack(spacing: MenuExpandedLayout.scrollSectionSpacing) {
@@ -101,12 +166,7 @@ struct StatusMenuView: SizeChangeView {
                 }
                 .frame(maxHeight: Self.expandedComponentsScrollCap())
             } else {
-                ForEach(Array(visibleMenuComponents.enumerated()), id: \.element.id) { index, component in
-                    if index > 0 {
-                        SeparatorView(padding: 2)
-                    }
-                    component.getView()
-                }
+                menuComponentsStack
             }
         }
         .padding(.vertical, expandedChrome ? MenuExpandedLayout.shellVerticalPadding : 8)

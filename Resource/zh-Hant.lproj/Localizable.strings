@@ -109,6 +109,7 @@
 "menu.show_quota_grok" = "顯示 Grok";
 "menu.show_quota_codex" = "顯示 Codex";
 "menu.quota_providers" = "額度供應商";
+"menu.hardware_components" = "硬體組件";
 
 // MARK: Temperature
 "temp.temperature" = "溫度";
@@ -286,7 +287,8 @@
 
 "component.mcp" = "MCP";
 "ui.mcp" = "MCP";
-"mcp.hub_enabled" = "MCP 中枢";
+"mcp.hub_enabled" = "在本機監聽";
+"mcp.hub_enabled.detail" = "打開後本機開始監聽，並啟動下面的伺服器。和選單裡是否顯示 MCP 頁無關。";
 "mcp.connect_agents" = "连接 agent";
 "mcp.open_catalog" = "打开配置文件";
 "mcp.listening" = "已监听";

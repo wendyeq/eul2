@@ -58,6 +58,13 @@ class McpStore: ObservableObject {
         }
     }
 
+    func moveServer(from offset: Int, to destination: Int) {
+        Task {
+            await McpHub.shared.moveServer(from: offset, to: destination)
+            refresh()
+        }
+    }
+
     func openCatalog() {
         Task {
             var catalog = await McpHub.shared.currentCatalog()

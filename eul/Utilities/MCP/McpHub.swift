@@ -78,6 +78,11 @@ actor McpHub {
         await persistCatalog()
     }
 
+    func moveServer(from offset: Int, to destination: Int) async {
+        catalog.moveServer(from: offset, to: destination)
+        await persistCatalog()
+    }
+
     private func persistCatalog() async {
         ignoreCatalogWrite = true
         try? McpCatalogStore.save(catalog)

@@ -111,6 +111,7 @@
 "menu.show_quota_grok" = "Show Grok quota";
 "menu.show_quota_codex" = "Show Codex quota";
 "menu.quota_providers" = "Quota providers";
+"menu.hardware_components" = "Hardware components";
 
 // MARK: Temperature
 "temp.temperature" = "Temperature";
@@ -297,7 +298,8 @@
 
 "component.mcp" = "MCP";
 "ui.mcp" = "MCP";
-"mcp.hub_enabled" = "MCP Hub";
+"mcp.hub_enabled" = "Listen locally";
+"mcp.hub_enabled.detail" = "When on, this Mac listens and starts the servers below. Separate from showing the MCP page.";
 "mcp.connect_agents" = "Connect Agents";
 "mcp.open_catalog" = "Open Config File";
 "mcp.listening" = "Listening";
@@ -317,3 +319,13 @@
 "mcp.weeks_ago" = "%dw ago";
 "mcp.months_ago" = "%dmo ago";
 "mcp.years_ago" = "%dy ago";
+"menu.tab.hardware" = "Hardware";
+"menu.tab.quota" = "Quotas";
+"menu.tab.mcp" = "MCP";
+"menu.tab.empty" = "Nothing to show. Enable items in Menu View.";
+"menu.default_tab" = "Open menu on";
+"menu.show_quota" = "Show quota page";
+"menu.show_mcp" = "Show MCP page";
+"menu.show_hardware" = "Show hardware page";
+"menu.configure_page" = "Configure page";
+"menu.tab.all_hidden" = "All menu pages are hidden. Open Settings to show one.";

@@ -38,6 +38,7 @@ struct PreferenceFormRowSeparator: View {
 struct PreferenceFormSplitRow<Label: View, Control: View>: View {
     var showsDivider: Bool
     var trailingSlotWidth: CGFloat = PreferenceChrome.formTrailingSwitchSlotWidth
+    var singleLineLabel = true
     @ViewBuilder var label: () -> Label
     @ViewBuilder var control: () -> Control
 
@@ -45,8 +46,8 @@ struct PreferenceFormSplitRow<Label: View, Control: View>: View {
         VStack(spacing: 0) {
             HStack(alignment: .center, spacing: 8) {
                 label()
-                    .lineLimit(1)
-                    .fixedSize(horizontal: true, vertical: false)
+                    .lineLimit(singleLineLabel ? 1 : nil)
+                    .fixedSize(horizontal: singleLineLabel, vertical: false)
                 Spacer(minLength: 4)
                 control()
                     .frame(width: trailingSlotWidth, alignment: .trailing)

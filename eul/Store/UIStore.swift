@@ -13,6 +13,7 @@ class UIStore: ObservableObject {
     @Published var hoveringID: String?
     @Published var menuWidth: CGFloat?
     @Published var menuOpened = false
+    @Published var selectedMenuTab: PreferenceStore.MenuTab = .hardware
     @Published var isStatusMenuPinned = false
     @Published var activeSection: Preference.Section = .general
     /// `nil` means show every active status-bar component. A number is the leading count that currently fits.

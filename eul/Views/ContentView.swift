@@ -59,11 +59,6 @@ struct ContentView: View {
                                 Preference.PreferenceMenuViewView()
                             }
                         }
-                        if uiStore.activeSection == .mcp {
-                            SectionView(title: "ui.mcp".localized()) {
-                                Preference.McpView()
-                            }
-                        }
                         Spacer(minLength: 0)
                     }
                     .padding(.vertical, PreferenceChrome.contentVerticalPadding)

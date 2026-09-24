@@ -7,10 +7,16 @@
 //
 
 import Foundation
+import Localize_Swift
 
 extension String {
     func deletingPrefix(_ prefix: String) -> String {
         guard hasPrefix(prefix) else { return self }
         return String(dropFirst(prefix.count))
+    }
+
+    func localized(fallback: String) -> String {
+        let value = localized()
+        return value == self ? fallback : value
     }
 }

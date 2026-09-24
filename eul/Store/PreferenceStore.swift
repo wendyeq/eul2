@@ -15,6 +15,20 @@ import SwiftyJSON
 import WidgetKit
 
 class PreferenceStore: ObservableObject {
+    enum MenuTab: String, CaseIterable, Identifiable {
+        case hardware, quota, mcp
+
+        var id: String { rawValue }
+        var titleKey: String { "menu.tab.\(rawValue)" }
+        var title: String {
+            switch self {
+            case .hardware: return titleKey.localized(fallback: "Hardware")
+            case .quota: return titleKey.localized(fallback: "Quotas")
+            case .mcp: return titleKey.localized(fallback: "MCP")
+            }
+        }
+    }
+
     enum UpgradeMethod: String, CaseIterable {
         case none
         case showInStatusBar
@@ -28,6 +42,7 @@ class PreferenceStore: ObservableObject {
     private let userDefaultsKey = "preference"
     private let repo = "wendyeq/eul2"
     private var cancellable: AnyCancellable?
+    private var needsHardwareOrderPersist = false
     var repoURL: URL? {
         URL(string: "https://github.com/\(repo)")
     }
@@ -65,6 +80,7 @@ class PreferenceStore: ObservableObject {
     @Published var showGrokQuota = true
     @Published var showCodexQuota = true
     @Published var quotaProviderOrder: [String] = Preference.QuotaProvider.defaultOrder.map(\.rawValue)
+    @Published var hardwareMenuOrder: [String] = EulMenuComponent.hardwareComponents.map(\.rawValue)
     @Published var cpuMenuDisplay: Preference.CpuMenuDisplay = .usagePercentage
     @Published var checkStatusItemVisibility = true
     @Published var upgradeMethod = UpgradeMethod.showInStatusBar
@@ -72,6 +88,8 @@ class PreferenceStore: ObservableObject {
     @Published var checkUpdateFailed = true
     @Published var appearanceMode = Preference.appearance.auto
     @Published var mcpHubEnabled = false
+    @Published var defaultMenuTab: MenuTab = .hardware
+    @Published var showHardwareMenuTab = true
 
     var json: JSON {
         JSON([
@@ -90,11 +108,14 @@ class PreferenceStore: ObservableObject {
             "showGrokQuota": showGrokQuota,
             "showCodexQuota": showCodexQuota,
             "quotaProviderOrder": orderedQuotaProviders.map(\.rawValue),
+            "hardwareMenuOrder": orderedHardwareComponents.map(\.rawValue),
             "cpuMenuDisplay": cpuMenuDisplay.rawValue,
             "checkStatusItemVisibility": checkStatusItemVisibility,
             "appearance": appearanceMode.rawValue,
             "upgradeMethod": upgradeMethod.rawValue,
             "mcpHubEnabled": mcpHubEnabled,
+            "defaultMenuTab": defaultMenuTab.rawValue,
+            "showHardwareMenuTab": showHardwareMenuTab,
 
         ])
     }
@@ -108,6 +129,9 @@ class PreferenceStore: ObservableObject {
                 self.saveToDefaults()
                 self.writeToContainer()
             }
+        }
+        if needsHardwareOrderPersist {
+            saveToDefaults()
         }
     }
 
@@ -147,6 +171,20 @@ class PreferenceStore: ObservableObject {
         quotaProviderOrder = order.map(\.rawValue)
     }
 
+    var orderedHardwareComponents: [EulMenuComponent] {
+        Self.normalizedHardwareOrder(hardwareMenuOrder.compactMap(EulMenuComponent.init(rawValue:)))
+    }
+
+    func moveHardwareComponent(from offset: Int, to destination: Int) {
+        var order = orderedHardwareComponents
+        guard order.indices.contains(offset), order.indices.contains(destination), offset != destination else {
+            return
+        }
+        let item = order.remove(at: offset)
+        order.insert(item, at: destination)
+        hardwareMenuOrder = order.map(\.rawValue)
+    }
+
     private static func normalizedQuotaOrder(_ input: [Preference.QuotaProvider]) -> [Preference.QuotaProvider] {
         var result: [Preference.QuotaProvider] = []
         for provider in input where !result.contains(provider) {
@@ -156,6 +194,29 @@ class PreferenceStore: ObservableObject {
             result.append(provider)
         }
         return result
+    }
+
+    private static func normalizedHardwareOrder(_ input: [EulMenuComponent]) -> [EulMenuComponent] {
+        let allowed = EulMenuComponent.hardwareComponents
+        var result: [EulMenuComponent] = []
+        for component in input where allowed.contains(component) && !result.contains(component) {
+            result.append(component)
+        }
+        for component in allowed where !result.contains(component) {
+            result.append(component)
+        }
+        return result
+    }
+
+    private static func migratedHardwareMenuOrder() -> [String] {
+        guard let raw = UserDefaults.standard.data(forKey: "EulMenuComponent"),
+              let menu = try? JSON(data: raw)
+        else {
+            return normalizedHardwareOrder([]).map(\.rawValue)
+        }
+        let active = menu["activeComponents"].array?.compactMap { EulMenuComponent(rawValue: $0.stringValue) } ?? []
+        let available = menu["availableComponents"].array?.compactMap { EulMenuComponent(rawValue: $0.stringValue) } ?? []
+        return normalizedHardwareOrder(active + available).map(\.rawValue)
     }
 
     func checkUpdate() {
@@ -246,6 +307,15 @@ class PreferenceStore: ObservableObject {
                         quotaProviderOrder = Self.normalizedQuotaOrder(parsed).map(\.rawValue)
                     }
                 }
+                let parsedHardwareOrder = data["hardwareMenuOrder"].array?.compactMap {
+                    EulMenuComponent(rawValue: $0.stringValue)
+                } ?? []
+                if parsedHardwareOrder.isEmpty {
+                    hardwareMenuOrder = Self.migratedHardwareMenuOrder()
+                    needsHardwareOrderPersist = true
+                } else {
+                    hardwareMenuOrder = Self.normalizedHardwareOrder(parsedHardwareOrder).map(\.rawValue)
+                }
                 if let raw = data["cpuMenuDisplay"].string, let value = Preference.CpuMenuDisplay(rawValue: raw) {
                     cpuMenuDisplay = value
                 }
@@ -260,6 +330,20 @@ class PreferenceStore: ObservableObject {
                 }
                 if let value = data["mcpHubEnabled"].bool {
                     mcpHubEnabled = value
+                }
+                if let raw = data["defaultMenuTab"].string, let tab = MenuTab(rawValue: raw) {
+                    defaultMenuTab = tab
+                }
+                if let value = data["showHardwareMenuTab"].bool {
+                    showHardwareMenuTab = value
+                } else if let savedMenu = UserDefaults.standard.data(forKey: "EulMenuComponent"),
+                          let menu = try? JSON(data: savedMenu),
+                          let active = menu["activeComponents"].array
+                {
+                    showHardwareMenuTab = active.contains {
+                        guard let component = EulMenuComponent(json: $0) else { return false }
+                        return component.isHardware
+                    }
                 }
             } catch {
                 print("Unable to get preference data from user defaults")

@@ -17,6 +17,14 @@ struct McpCatalog: Codable, Equatable {
         }
         servers[index].enabled = enabled
     }
+
+    mutating func moveServer(from offset: Int, to destination: Int) {
+        guard servers.indices.contains(offset), servers.indices.contains(destination), offset != destination else {
+            return
+        }
+        let entry = servers.remove(at: offset)
+        servers.insert(entry, at: destination)
+    }
 }
 
 struct McpServerEntry: Codable, Equatable, Identifiable {

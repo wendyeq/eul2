@@ -13,7 +13,6 @@ extension Preference {
         case general
         case components
         case menuView
-        case mcp
 
         var id: String {
             rawValue
@@ -27,8 +26,6 @@ extension Preference {
                 return "ui.components".localized()
             case .menuView:
                 return "ui.menu_view".localized()
-            case .mcp:
-                return "ui.mcp".localized()
             }
         }
     }

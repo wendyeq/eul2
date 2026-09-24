@@ -111,6 +111,7 @@
 "menu.show_quota_grok" = "显示 Grok";
 "menu.show_quota_codex" = "显示 Codex";
 "menu.quota_providers" = "额度供应商";
+"menu.hardware_components" = "硬件组件";
 
 // MARK: Temperature
 "temp.temperature" = "温度";
@@ -298,7 +299,8 @@
 
 "component.mcp" = "MCP";
 "ui.mcp" = "MCP";
-"mcp.hub_enabled" = "MCP 中枢";
+"mcp.hub_enabled" = "在本机监听";
+"mcp.hub_enabled.detail" = "打开后本机开始监听，并启动下面的服务器。和菜单里是否显示 MCP 页无关。";
 "mcp.connect_agents" = "连接 agent";
 "mcp.open_catalog" = "打开配置文件";
 "mcp.listening" = "已监听";
@@ -318,3 +320,13 @@
 "mcp.weeks_ago" = "%d周前";
 "mcp.months_ago" = "%d个月前";
 "mcp.years_ago" = "%d年前";
+"menu.tab.hardware" = "硬件";
+"menu.tab.quota" = "额度";
+"menu.tab.mcp" = "MCP";
+"menu.tab.empty" = "暂无内容，可在「菜单视图」启用。";
+"menu.default_tab" = "打开菜单时显示";
+"menu.show_quota" = "显示额度页";
+"menu.show_mcp" = "显示 MCP 页";
+"menu.show_hardware" = "显示硬件页";
+"menu.configure_page" = "配置页面";
+"menu.tab.all_hidden" = "所有菜单页均已隐藏，可在设置中重新开启。";

@@ -69,6 +69,20 @@ class ComponentsStore<Component: JSONCodabble & Equatable>: ObservableObject {
         availableComponents.remove(at: index)
     }
 
+    func setActive(_ component: Component, enabled: Bool) {
+        if enabled {
+            guard !activeComponents.contains(component) else { return }
+            availableComponents.removeAll { $0 == component }
+            activeComponents.append(component)
+        } else {
+            guard activeComponents.contains(component) else { return }
+            activeComponents.removeAll { $0 == component }
+            if !availableComponents.contains(component) {
+                availableComponents.append(component)
+            }
+        }
+    }
+
     func loadFromDefaults() {
         if let raw = UserDefaults.standard.data(forKey: userDefaultsKey) {
             do {

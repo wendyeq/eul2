@@ -8,11 +8,19 @@ extension Preference {
         var body: some View {
             VStack(alignment: .leading, spacing: PreferenceChrome.formRowSpacing) {
                 PreferenceInsetFormGroup {
-                    PreferenceFormSwitchRow(
-                        title: "mcp.hub_enabled".localized(),
-                        isOn: $preference.mcpHubEnabled,
-                        showsDivider: false
-                    )
+                    PreferenceFormSplitRow(showsDivider: false, singleLineLabel: false) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("mcp.hub_enabled".localized(fallback: "Listen locally"))
+                                .preferenceFormLabel()
+                            Text("mcp.hub_enabled.detail".localized(fallback: "When on, this Mac listens and starts the servers below. Separate from showing the MCP page."))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    } control: {
+                        Toggle("", isOn: $preference.mcpHubEnabled)
+                            .preferenceFormTrailingSwitch()
+                    }
                 }
                 HStack(spacing: 8) {
                     Button("mcp.connect_agents".localized()) {
@@ -30,31 +38,41 @@ extension Preference {
                 Text(statusLine)
                     .secondaryDisplayText()
                 if !mcpStore.servers.isEmpty {
-                    PreferenceInsetFormGroup {
-                        ForEach(Array(mcpStore.servers.enumerated()), id: \.element.id) { index, server in
-                            PreferenceFormSplitRow(
-                                showsDivider: index < mcpStore.servers.count - 1,
-                                trailingSlotWidth: PreferenceChrome.formTrailingSwitchSlotWidth
-                            ) {
-                                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                                    Text(server.id)
-                                        .preferenceFormLabel()
-                                    Text(server.statusText(now: Date(), showsErrorDetail: true))
-                                        .secondaryDisplayText()
-                                        .lineLimit(1)
-                                        .minimumScaleFactor(0.7)
-                                }
-                            } control: {
-                                Toggle("", isOn: Binding(
-                                    get: { server.enabled },
-                                    set: { mcpStore.setServerEnabled(id: server.id, enabled: $0) }
-                                ))
-                                    .preferenceFormTrailingSwitch()
-                            }
+                    Text("component.drag_to_reorder".localized())
+                        .subsection()
+                        .foregroundColor(Color.gray)
+                    PreferenceEnabledOrderList(
+                        items: mcpStore.servers.map(\.id),
+                        coordinateSpace: "McpServersOrdering",
+                        isOn: serverEnabledBinding,
+                        move: { mcpStore.moveServer(from: $0, to: $1) }
+                    ) { id in
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            Text(id)
+                                .preferenceFormLabel()
+                            Text(serverStatus(id))
+                                .secondaryDisplayText()
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
                         }
                     }
                 }
             }
+        }
+
+        private func server(_ id: String) -> McpServerStatus? {
+            mcpStore.servers.first { $0.id == id }
+        }
+
+        private func serverEnabledBinding(_ id: String) -> Binding<Bool> {
+            Binding(
+                get: { server(id)?.enabled ?? false },
+                set: { mcpStore.setServerEnabled(id: id, enabled: $0) }
+            )
+        }
+
+        private func serverStatus(_ id: String) -> String {
+            server(id)?.statusText(now: Date(), showsErrorDetail: true) ?? ""
         }
 
         private var statusLine: String {

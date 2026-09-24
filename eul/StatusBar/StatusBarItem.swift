@@ -170,7 +170,7 @@ class StatusBarItem: NSObject, NSMenuDelegate {
     }
 
     private func presentDropdownPanel() {
-        SharedStore.ui.menuOpened = true
+        markMenuOpened()
         expandedGeneration += 1
         ensureExpandedPanel()
         dropdownAwaitingLayout = true
@@ -213,6 +213,13 @@ class StatusBarItem: NSObject, NSMenuDelegate {
 
     func menuWillOpen(_ menu: NSMenu) {
         SharedStore.ui.menuWidth = menu.size.width
+        markMenuOpened()
+    }
+
+    private func markMenuOpened() {
+        if !SharedStore.ui.menuOpened {
+            SharedStore.ui.selectedMenuTab = preferenceStore.defaultMenuTab
+        }
         SharedStore.ui.menuOpened = true
     }
 
