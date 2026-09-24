@@ -2,9 +2,16 @@
 
 本分支基于 [gao-sun/eul](https://github.com/gao-sun/eul) 继续开发。上游最后广泛使用的 Intel 版本为 **[1.6.2](https://github.com/gao-sun/eul/releases/tag/1.6.2)**。
 
-## [2.2.1] — unreleased
+## [2.2.1] — 2026-09-24
 
-面向 **Apple Silicon（arm64）**、**macOS 13+**。尚未发 GitHub Release / tag。安装仍为 **`eul2.app`** / `com.wendyeq.eul2`。
+面向 **Apple Silicon（arm64）**、**macOS 13+**。营销版本 **2.2.1**（build 72）。安装仍为 **`eul2.app`** / `com.wendyeq.eul2`。ad-hoc 签名，首次需右键打开。
+
+### 菜单
+
+- 状态下拉分成硬件、额度、MCP 三页；多于一页时在顶栏切换。
+- 偏好 → 菜单视图：打开菜单时的默认页；硬件、额度、MCP 页可分别显示或隐藏。
+- 硬件组件、额度供应商、MCP server 可拖拽排序。
+- MCP 配置从侧栏并入菜单视图。
 
 ### MCP 中枢
 

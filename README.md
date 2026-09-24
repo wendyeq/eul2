@@ -6,7 +6,7 @@
 
 ![Preview](https://user-images.githubusercontent.com/14722250/105626766-f718ab00-5e6c-11eb-9761-661ff85c8faf.jpg)
 
-macOS menu bar system monitor. **Version 2.2.0** in this repository is an Apple Silicon–focused continuation of [gao-sun/eul](https://github.com/gao-sun/eul), maintained as the public line at **[wendyeq/eul2](https://github.com/wendyeq/eul2)** (install **`eul2.app`**, bundle ID **`com.wendyeq.eul2`**).
+macOS menu bar system monitor. **Version 2.2.1** in this repository is an Apple Silicon–focused continuation of [gao-sun/eul](https://github.com/gao-sun/eul), maintained as the public line at **[wendyeq/eul2](https://github.com/wendyeq/eul2)** (install **`eul2.app`**, bundle ID **`com.wendyeq.eul2`**).
 
 ## Highlights
 
@@ -20,7 +20,7 @@ macOS menu bar system monitor. **Version 2.2.0** in this repository is an Apple 
 
 **This fork is Apple Silicon (`arm64`) only, minimum macOS 13.0** (2.0.0 was 12.0).
 
-| | **Upstream gao-sun/eul 1.6.2** | **This fork 2.2.0** |
+| | **Upstream gao-sun/eul 1.6.2** | **This fork 2.2.1** |
 |---|---|---|
 | CPU | Intel + Apple Silicon | Apple Silicon only |
 | macOS | Older releases through Intel-capable versions | **13.0+** |
@@ -34,7 +34,14 @@ macOS menu bar system monitor. **Version 2.2.0** in this repository is an Apple 
 ## Repositories
 
 - **[gao-sun/eul](https://github.com/gao-sun/eul)** — original open-source project (last widely used Intel build: **1.6.2**).
-- **[wendyeq/eul2](https://github.com/wendyeq/eul2)** — **this repository**; Apple Silicon **2.2.0** source and releases (`eul2.app`).
+- **[wendyeq/eul2](https://github.com/wendyeq/eul2)** — **this repository**; Apple Silicon **2.2.1** source and releases (`eul2.app`).
+
+## What’s new in 2.2.1
+
+- Status menu pages: **Hardware**, **Quotas**, and **MCP**, with a default page when the menu opens.
+- Menu View preferences show or hide each page and drag-reorder hardware components, quota providers, and MCP servers.
+- MCP hub: connect Pi and DeepSeek Harness; listen before upstream handshakes; per-server status. Menu MCP icon is separate from quota.
+- See [CHANGELOG.md](CHANGELOG.md) for the full 2.2.1 list.
 
 ## What’s new in 2.2.0
 
@@ -96,19 +103,19 @@ Compared to **[gao-sun/eul 1.6.2](https://github.com/gao-sun/eul/releases/tag/1.
 
 ## Installation
 
-### 2.2.0 (Apple Silicon, this fork) — **`eul2.app`**
+### 2.2.1 (Apple Silicon, this fork) — **`eul2.app`**
 
-**Homebrew does not install 2.2.0.** The `eul` cask still points at **[gao-sun/eul 1.6.2](https://github.com/gao-sun/eul/releases/tag/1.6.2)** and installs **`/Applications/eul.app`**.
+**Homebrew does not install 2.2.1.** The `eul` cask still points at **[gao-sun/eul 1.6.2](https://github.com/gao-sun/eul/releases/tag/1.6.2)** and installs **`/Applications/eul.app`**.
 
-To run **2.2.0** alongside (or instead of) that build:
+To run **2.2.1** alongside (or instead of) that build:
 
 1. On an **Apple Silicon** Mac (**macOS 13+**), open `eul.xcodeproj` and build the **eul** scheme (Release), or use a prebuilt `eul.app` from someone who built this tree.
 2. Ad-hoc sign if needed: `CODE_SIGN_IDENTITY=-` (not notarized; no Developer ID in-tree).
 3. Copy the product to **`/Applications/eul2.app`** (rename on copy — the Xcode product folder is still named `eul.app`, but the installed name must be **`eul2.app`** so it does not overwrite Homebrew’s `eul.app`).
 4. First launch: if macOS blocks the app, **right-click → Open** once (Gatekeeper for ad-hoc builds), or allow in **System Settings → Privacy & Security**.
-5. In preferences, the app reports version **2.2.0**; update checks and the GitHub button use **[wendyeq/eul2](https://github.com/wendyeq/eul2)**.
+5. In preferences, the app reports version **2.2.1**; update checks and the GitHub button use **[wendyeq/eul2](https://github.com/wendyeq/eul2)**.
 
-You can keep **`/Applications/eul.app`** (1.6.2) for Intel-era workflows on another machine, or uninstall it on Apple Silicon if you only need 2.2.0. Only one should own the menu bar at a time.
+You can keep **`/Applications/eul.app`** (1.6.2) for Intel-era workflows on another machine, or uninstall it on Apple Silicon if you only need 2.2.1. Only one should own the menu bar at a time.
 
 ### 1.6.2 (Intel + official Homebrew / App Store) — **`eul.app`**
 
@@ -116,11 +123,11 @@ You can keep **`/Applications/eul.app`** (1.6.2) for Intel-era workflows on anot
 brew install --cask eul
 ```
 
-This installs upstream **1.6.2**, not 2.2.0. You can also download [gao-sun/eul 1.6.2](https://github.com/gao-sun/eul/releases/tag/1.6.2) directly. App Store builds may omit SMC-based features and lag behind source releases.
+This installs upstream **1.6.2**, not 2.2.1. You can also download [gao-sun/eul 1.6.2](https://github.com/gao-sun/eul/releases/tag/1.6.2) directly. App Store builds may omit SMC-based features and lag behind source releases.
 
 ### Release notes
 
-[gao-sun/eul releases](https://github.com/gao-sun/eul/releases/latest) — tags through **1.6.x** (Intel / Homebrew). **2.2.0** ships from **[wendyeq/eul2 releases](https://github.com/wendyeq/eul2/releases/latest)** as **`eul2.app.zip`** (not via Homebrew until a cask is added separately).
+[gao-sun/eul releases](https://github.com/gao-sun/eul/releases/latest) — tags through **1.6.x** (Intel / Homebrew). **2.2.1** ships from **[wendyeq/eul2 releases](https://github.com/wendyeq/eul2/releases/latest)** as **`eul2.app.zip`** (not via Homebrew until a cask is added separately).
 
 ## Contributors
 

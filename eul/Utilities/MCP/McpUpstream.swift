@@ -16,7 +16,7 @@ enum McpUpstream {
     static let connectTimeoutNanoseconds: UInt64 = 60_000_000_000
 
     static func connect(_ entry: McpServerEntry, onProcessExit: (@Sendable (Process) -> Void)? = nil) async throws -> McpUpstreamClient {
-        let client = Client(name: "eul2", version: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "2.2.0")
+        let client = Client(name: "eul2", version: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "2.2.1")
         if entry.isRemote {
             guard let raw = entry.url, let url = URL(string: raw) else {
                 throw MCPError.invalidParams("invalid url for \(entry.id)")
