@@ -9,18 +9,18 @@
 
 ## 1. 问题
 
-本机多个 agent（Cursor、Claude Desktop、Claude Code、Codex、Grok）各自维护一份 MCP 配置。每加一个 server，就要改一遍。MCP Router 曾经用「一份目录 + 一个本地入口」解决这件事，但已于 2026-09-18 停更，且其 HTTP 聚合在多客户端下不稳定。
+本机多个 agent（Cursor、Claude Desktop、Claude Code、Codex、Grok、Pi、DeepSeek Harness）各自维护一份 MCP 配置。每加一个 server，就要改一遍。MCP Router 曾经用「一份目录 + 一个本地入口」解决这件事，但已于 2026-09-18 停更，且其 HTTP 聚合在多客户端下不稳定。
 
 要保住的是这个理念，不是那个 Electron 应用：在 eul2 里用 Swift 重写中枢。各 agent 只连接一次；之后只改 eul2 的目录。
 
 ## 2. 目标
 
 1. 一份 MCP 目录，增删和开关只改这一处。
-2. 五个客户端各留一条名为 `eul2-mcp` 的连接，不再为每个 server 单独配置。
+2. 七个客户端各留一条名为 `eul2-mcp` 的连接，不再为每个 server 单独配置。
 3. 打开下拉菜单能看出中枢是否在跑、各 server 是否启用、**上次有没有被调用**。
 4. 会话结束后能用一份无参数的调用记录核对「到底有没有打到中枢」。
 
-成功标准：目录里加一个测试 server 后，五个客户端不改各自配置就能调到新工具；关掉则四处同时消失；菜单能显示「几分钟前」或「从未」；JSONL 里能对上这次调用。
+成功标准：目录里加一个测试 server 后，七个客户端不改各自配置就能调到新工具；关掉则各端同时消失；菜单能显示「几分钟前」或「从未」；JSONL 里能对上这次调用。
 
 ## 3. 非目标
 
@@ -104,10 +104,12 @@ eul2 退出，中枢停止。目录和调用记录仍留在用户主目录的 Ap
 | Claude Code | `~/.claude.json` 顶层 `mcpServers` | 同上 |
 | Codex | `~/.codex/config.toml` | `url = "http://127.0.0.1:18732/mcp"` |
 | Grok | `~/.grok/config.toml` | 同上 |
+| Pi | `~/.pi/agent/mcp.json` | stdio：`eul mcp-connect` |
+| DeepSeek Harness | `~/.dsh/cordis.patch.yml` | `@deepseek-ai/dsh-mcp-client`，`streamable-http` 指向 `http://127.0.0.1:18732/mcp` |
 
 `eul mcp-connect` 是同一条二进制：`argv[1] == mcp-connect` 时不进菜单栏，只做 stdio → 中枢 HTTP。中枢 2 秒连不上则 stderr + 退出码 1。
 
-「连接 agent」只 upsert 名为 `eul2-mcp` 的条目。不改其它条目（例如已有的 `mcp`、`mcp-router` / `mcp_router`、Codex 的 `my-coffee`、Claude 的 `mcpServers.disabled`）。`command` 指向**当前正在运行**的 `Bundle.main.executableURL`。回环 HTTP 路径仍是 `/mcp`（协议入口，不是 server 名）。
+「连接 agent」只 upsert 名为 `eul2-mcp` 的条目。不改其它条目（例如已有的 `mcp`、`mcp-router` / `mcp_router`、Codex 的 `my-coffee`、Claude 的 `mcpServers.disabled`、`~/.dsh/profiles/*/cordis.patch.yml`）。DSH 写在家目录层 `~/.dsh/cordis.patch.yml`，每个 profile 都会带上。`command` 指向**当前正在运行**的 `Bundle.main.executableURL`。回环 HTTP 路径仍是 `/mcp`（协议入口，不是 server 名）。
 
 工具对外名称：`{id}--{原名}`（例如 `gitnexus--list_repos`）。中枢名里不用 `__`：Grok 会再套一层 `eul2-mcp__…`，第二段 `__` 会被 session admission 丢掉。`--` 仍能切开 id 和原名。Cursor / Claude / Codex 共用同一份 `tools/list`。
 
@@ -187,9 +189,9 @@ mcp-connect CLI ──────────────────┘
 1. Debug 构建通过：`xcodebuild -project eul.xcodeproj -scheme eul -destination 'platform=macOS,arch=arm64' -configuration Debug build`
 2. 总开关默认关；打开后 `127.0.0.1:18732` 可连。
 3. 「打开配置文件」用默认应用打开 `mcp-catalog.json`；手写 server 后热加载。
-4. 「连接 agent」后五个客户端都有 `eul2-mcp`；Codex / Claude 里原有其它 MCP 条目仍在。
+4. 「连接 agent」后七个客户端都有 `eul2-mcp`；Codex / Claude 里原有其它 MCP 条目仍在。
 5. `grok mcp doctor` 通过；Cursor / Claude 能列出带 `id--` 前缀的工具。
-6. catalog 里关掉一条，五端同时少那组工具，且不用重配客户端。
+6. catalog 里关掉一条，七端同时少那组工具，且不用重配客户端。
 7. 调一次工具后，菜单该行从「从未」变为相对时间；JSONL 多一行且无参数字段。
 8. 关掉中枢后，`eul mcp-connect` 在 3 秒内以退出码 1 结束。
 9. 两个客户端同时调工具，不出现「第一请求之后全部 500」。
@@ -212,6 +214,6 @@ mcp-connect CLI ──────────────────┘
 3. 目录在 Application Support，不在应用包内；删 app 不删目录。
 4. 本功能只上 2.2.0。
 5. 总开关默认关。
-6. 五客户端：Grok / Codex 走 HTTP，其余走 `mcp-connect`。
+6. 七客户端：Grok / Codex / DeepSeek Harness 走 HTTP，其余走 `mcp-connect`。
 7. 可见性只要上次调用 + 无参数 JSONL；不要 SQLite、不要统计。
 8. 偏好侧栏增加一级栏目「MCP」；「通用」不放中枢配置；「菜单视图」只控制下拉是否显示该块。

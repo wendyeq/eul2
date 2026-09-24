@@ -8,6 +8,8 @@
 
 ### MCP 中枢
 
+- 「连接 agent」增加 Pi：upsert `~/.pi/agent/mcp.json` 的 `eul2-mcp`，stdio `eul mcp-connect`。
+- 「连接 agent」增加 DeepSeek Harness：在 `~/.dsh/cordis.patch.yml` upsert `@deepseek-ai/dsh-mcp-client`，Streamable HTTP 指向中枢。不改 `profiles/*/cordis.patch.yml`。
 - 打开中枢后先听 `127.0.0.1:18732`，不再等上游握手；单个 server 握手超过 60 秒记失败，不拖住端口。
 - 偏好 MCP 与菜单中每个 server 独立显示：连接中 / 已连接 / 失败 / 未连接。中枢「已监听」只表示端口，不代表 gitnexus / playwright 都连上。
 - 菜单里 MCP 图标与额度图标分开。server 上次调用按秒、分钟、小时、天、周、月、年显示。

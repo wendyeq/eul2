@@ -39,6 +39,12 @@ enum McpAgentWriter {
         attempt("Grok") {
             try upsertTOML(url: home.appendingPathComponent(".grok/config.toml"), httpURL: httpURL)
         }
+        attempt("Pi") {
+            try upsertJSON(url: home.appendingPathComponent(".pi/agent/mcp.json"), executable: executable)
+        }
+        attempt("DSH") {
+            try upsertDSH(url: home.appendingPathComponent(".dsh/cordis.patch.yml"), httpURL: httpURL)
+        }
         return Result(updated: updated, failed: failed)
     }
 
@@ -75,5 +81,54 @@ enum McpAgentWriter {
         """
         content = content.trimmingCharacters(in: .whitespacesAndNewlines) + "\n" + block + "\n"
         try McpPaths.writeAtomic(Data(content.utf8), to: url)
+    }
+
+    private static let dshBlockStart = "# eul2-mcp-start"
+    private static let dshBlockEnd = "# eul2-mcp-end"
+
+    private static func upsertDSH(url: URL, httpURL: String) throws {
+        let block = """
+        \(dshBlockStart)
+        - insert:
+            - id: \(serverID)
+              name: '@deepseek-ai/dsh-mcp-client'
+              config:
+                serverName: \(serverID)
+                transport: streamable-http
+                url: \(httpURL)
+        \(dshBlockEnd)
+        """
+        var content = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
+        if let updated = replacingMarkedBlock(in: content, start: dshBlockStart, end: dshBlockEnd, with: block) {
+            content = updated
+        } else if dshPatchBody(content).isEmpty || dshPatchBody(content) == "[]" {
+            content = block + "\n"
+        } else {
+            if !content.hasSuffix("\n") {
+                content += "\n"
+            }
+            content += block + "\n"
+        }
+        try McpPaths.writeAtomic(Data(content.utf8), to: url)
+    }
+
+    private static func dshPatchBody(_ content: String) -> String {
+        content
+            .components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty && !$0.hasPrefix("#") }
+            .joined(separator: "\n")
+    }
+
+    private static func replacingMarkedBlock(in content: String, start: String, end: String, with block: String) -> String? {
+        guard let startRange = content.range(of: start),
+              let endRange = content.range(of: end),
+              startRange.upperBound <= endRange.lowerBound
+        else {
+            return nil
+        }
+        var updated = content
+        updated.replaceSubrange(startRange.lowerBound..<endRange.upperBound, with: block)
+        return updated
     }
 }
