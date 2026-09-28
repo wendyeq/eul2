@@ -134,7 +134,7 @@ actor McpLoopbackHTTP {
         let transport = StatefulHTTPServerTransport()
         let server = Server(
             name: "eul2",
-            version: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "2.2.2",
+            version: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "2.2.3",
             capabilities: .init(
                 prompts: .init(listChanged: true),
                 resources: .init(listChanged: true),

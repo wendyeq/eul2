@@ -27,13 +27,13 @@ enum McpConnectCLI {
             return 1
         }
         do {
-            let client = Client(name: "eul-mcp-connect", version: "2.2.2")
+            let client = Client(name: "eul-mcp-connect", version: "2.2.3")
             let transport = HTTPClientTransport(endpoint: url, streaming: true)
             _ = try await client.connect(transport: transport)
 
             let server = Server(
                 name: "eul2",
-                version: "2.2.2",
+                version: "2.2.3",
                 capabilities: .init(
                     prompts: .init(listChanged: true),
                     resources: .init(listChanged: true),

@@ -2,6 +2,24 @@
 
 本分支基于 [gao-sun/eul](https://github.com/gao-sun/eul) 继续开发。上游最后广泛使用的 Intel 版本为 **[1.6.2](https://github.com/gao-sun/eul/releases/tag/1.6.2)**。
 
+## [2.2.3] — 2026-09-29
+
+面向 **Apple Silicon（arm64）**、**macOS 13+**。营销版本 **2.2.3**（build 74）。安装仍为 **`eul2.app`** / `com.wendyeq.eul2`。ad-hoc 签名，首次需右键打开。
+
+### MCP 中枢
+
+- 中枢关闭后，拖动排序或切换 server 只保存目录，不再重新打开本机监听或拉起上游。
+- 关闭与正在建立的监听、上游连接交叉时，旧任务不再把端口或连接装回去。
+
+### 额度
+
+- Antigravity 刷新遇到 `invalid_client`（含 HTTP 401）时，显示客户端认证失败，并提示检查 eul2 更新；不再当成未登录。
+- 失败时仍保留上次额度，并标明当前显示的是上次数据。
+
+### 菜单
+
+- 硬件与额度列表拖拽时，让位行按被拖行高度加上行间距平移，减少不等高行松手时的跳动。
+
 ## [2.2.2] — 2026-09-28
 
 面向 **Apple Silicon（arm64）**、**macOS 13+**。营销版本 **2.2.2**（build 73）。安装仍为 **`eul2.app`** / `com.wendyeq.eul2`。ad-hoc 签名，首次需右键打开。
