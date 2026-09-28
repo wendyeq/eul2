@@ -258,3 +258,12 @@ Copyright © 2020 Gao Sun. All rights reserved.
 "mcp.weeks_ago" = "%dw ago";
 "mcp.months_ago" = "%dmo ago";
 "mcp.years_ago" = "%dy ago";
+
+"quota.antigravity" = "Antigravity";
+"quota.antigravity.gemini_5h" = "Gemini 5h";
+"quota.antigravity.gemini_weekly" = "Gemini Weekly";
+"quota.antigravity.claude_gpt_5h" = "Claude/GPT 5h";
+"quota.antigravity.claude_gpt_weekly" = "Claude/GPT Weekly";
+"quota.antigravity.sign_in" = "Open Antigravity and sign in";
+
+"quota.antigravity.show_claude_gpt" = "Show Claude/GPT quota";

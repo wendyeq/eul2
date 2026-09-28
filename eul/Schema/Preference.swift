@@ -96,10 +96,11 @@ struct Preference {
         case cursor
         case grok
         case codex
+        case antigravity
 
         var id: String { rawValue }
 
-        static let defaultOrder: [QuotaProvider] = [.cursor, .grok, .codex]
+        static let defaultOrder: [QuotaProvider] = [.cursor, .grok, .codex, .antigravity]
 
         var titleKey: String {
             "quota.\(rawValue)"

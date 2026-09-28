@@ -163,6 +163,17 @@ extension Preference {
                         Text(provider.titleKey.localized())
                             .normal()
                             .fixedSize()
+                    } detail: { provider in
+                        if provider == .antigravity && preference.showAntigravityQuota {
+                            VStack(spacing: 0) {
+                                PreferenceFormRowSeparator()
+                                PreferenceFormSwitchRow(
+                                    title: "quota.antigravity.show_claude_gpt".localized(),
+                                    isOn: $preference.showAntigravityClaudeGPTQuota,
+                                    showsDivider: false
+                                )
+                            }
+                        }
                     }
                 }
             }

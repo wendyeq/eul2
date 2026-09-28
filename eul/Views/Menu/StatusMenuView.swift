@@ -55,7 +55,7 @@ struct StatusMenuView: SizeChangeView {
                 menuComponentsStore.activeComponents.contains($0)
             }
         case .quota:
-            return preferenceStore.showCursorQuota || preferenceStore.showGrokQuota || preferenceStore.showCodexQuota
+            return preferenceStore.showCursorQuota || preferenceStore.showGrokQuota || preferenceStore.showCodexQuota || preferenceStore.showAntigravityQuota
                 ? [.Quota] : []
         case .mcp:
             return [.MCP]

@@ -330,3 +330,12 @@
 "menu.show_hardware" = "显示硬件页";
 "menu.configure_page" = "配置页面";
 "menu.tab.all_hidden" = "所有菜单页均已隐藏，可在设置中重新开启。";
+
+"quota.antigravity" = "Antigravity";
+"quota.antigravity.gemini_5h" = "Gemini 5h";
+"quota.antigravity.gemini_weekly" = "Gemini 周额度";
+"quota.antigravity.claude_gpt_5h" = "Claude/GPT 5h";
+"quota.antigravity.claude_gpt_weekly" = "Claude/GPT 周额度";
+"quota.antigravity.sign_in" = "请打开 Antigravity 登录";
+
+"quota.antigravity.show_claude_gpt" = "显示 Claude/GPT 额度";

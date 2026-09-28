@@ -36,12 +36,19 @@ struct QuotaMenuBlockView: View {
             return quotaStore.grok
         case .codex:
             return quotaStore.codex
+        case .antigravity:
+            return quotaStore.antigravity
         }
     }
 
     @ViewBuilder
     private func providerMeters(_ provider: Preference.QuotaProvider) -> some View {
         let snapshot = snapshot(for: provider)
+        let meters = snapshot.meters.filter { meter in
+            provider != .antigravity
+                || preferenceStore.showAntigravityClaudeGPTQuota
+                || !meter.id.hasPrefix("claude_gpt_")
+        }
         let title = provider.titleKey.localized()
         switch snapshot.kind {
         case .pending:
@@ -54,7 +61,7 @@ struct QuotaMenuBlockView: View {
             QuotaStatusRow(title: title, message: "ui.empty".localized())
         case .ready, .failed:
             VStack(alignment: .leading, spacing: 8) {
-                ForEach(snapshot.meters, id: \.id) { meter in
+                ForEach(meters, id: \.id) { meter in
                     QuotaMeterRow(
                         title: "\(title) · \(meter.labelKey.localized())",
                         meter: meter

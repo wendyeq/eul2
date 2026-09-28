@@ -79,6 +79,8 @@ class PreferenceStore: ObservableObject {
     @Published var showCursorQuota = true
     @Published var showGrokQuota = true
     @Published var showCodexQuota = true
+    @Published var showAntigravityQuota = true
+    @Published var showAntigravityClaudeGPTQuota = true
     @Published var quotaProviderOrder: [String] = Preference.QuotaProvider.defaultOrder.map(\.rawValue)
     @Published var hardwareMenuOrder: [String] = EulMenuComponent.hardwareComponents.map(\.rawValue)
     @Published var cpuMenuDisplay: Preference.CpuMenuDisplay = .usagePercentage
@@ -107,6 +109,8 @@ class PreferenceStore: ObservableObject {
             "showCursorQuota": showCursorQuota,
             "showGrokQuota": showGrokQuota,
             "showCodexQuota": showCodexQuota,
+            "showAntigravityQuota": showAntigravityQuota,
+            "showAntigravityClaudeGPTQuota": showAntigravityClaudeGPTQuota,
             "quotaProviderOrder": orderedQuotaProviders.map(\.rawValue),
             "hardwareMenuOrder": orderedHardwareComponents.map(\.rawValue),
             "cpuMenuDisplay": cpuMenuDisplay.rawValue,
@@ -147,6 +151,8 @@ class PreferenceStore: ObservableObject {
             return showGrokQuota
         case .codex:
             return showCodexQuota
+        case .antigravity:
+            return showAntigravityQuota
         }
     }
 
@@ -158,6 +164,8 @@ class PreferenceStore: ObservableObject {
             showGrokQuota = visible
         case .codex:
             showCodexQuota = visible
+        case .antigravity:
+            showAntigravityQuota = visible
         }
     }
 
@@ -300,6 +308,12 @@ class PreferenceStore: ObservableObject {
                 }
                 if let value = data["showCodexQuota"].bool {
                     showCodexQuota = value
+                }
+                if let value = data["showAntigravityQuota"].bool {
+                    showAntigravityQuota = value
+                }
+                if let value = data["showAntigravityClaudeGPTQuota"].bool {
+                    showAntigravityClaudeGPTQuota = value
                 }
                 if let rawOrder = data["quotaProviderOrder"].array {
                     let parsed = rawOrder.compactMap { Preference.QuotaProvider(rawValue: $0.stringValue) }

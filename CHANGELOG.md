@@ -2,6 +2,20 @@
 
 本分支基于 [gao-sun/eul](https://github.com/gao-sun/eul) 继续开发。上游最后广泛使用的 Intel 版本为 **[1.6.2](https://github.com/gao-sun/eul/releases/tag/1.6.2)**。
 
+## [2.2.2] — 2026-09-28
+
+面向 **Apple Silicon（arm64）**、**macOS 13+**。营销版本 **2.2.2**（build 73）。安装仍为 **`eul2.app`** / `com.wendyeq.eul2`。ad-hoc 签名，首次需右键打开。
+
+### Antigravity 额度
+
+- 新增 Antigravity 订阅额度，沿用现有额度菜单、显隐开关和可拖拽排序；与其他供应商并行刷新。
+- 固定展示顺序：Gemini 5h、Gemini 周额度、Claude/GPT 5h、Claude/GPT 周额度。按官方剩余比例计算用量，重置时间用于窗口时间刻度。
+- 每次刷新按 Keychain、jetski、旧版只读 state.vscdb 的顺序读取凭据；存在 Antigravity IDE 目录时不回退到 Antigravity 目录。
+- 有 refresh token 时，即使 IDE 未运行也走官方接口；无凭据才尝试本机 language_server RPC。
+- 凭据仅在刷新调用内使用，不写回、不导入、不切换账号，不读取 Gemini CLI 的 oauth_creds.json。认证失效提示打开 Antigravity 登录，其他失败沿用上次额度。
+- 偏好 → 菜单 → 额度 → Antigravity 新增「显示 Claude/GPT 额度」开关，默认开启；关闭只隐藏这两行，不影响 Gemini 或取数。
+- 所有已有额度语言资源新增 Antigravity 标签；增加注入命令与 HTTP 响应的离线测试。
+
 ## [2.2.1] — 2026-09-24
 
 面向 **Apple Silicon（arm64）**、**macOS 13+**。营销版本 **2.2.1**（build 72）。安装仍为 **`eul2.app`** / `com.wendyeq.eul2`。ad-hoc 签名，首次需右键打开。

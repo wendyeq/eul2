@@ -13,6 +13,7 @@ class QuotaStore: ObservableObject {
     @Published private(set) var cursor = QuotaProviderSnapshot.pending
     @Published private(set) var grok = QuotaProviderSnapshot.pending
     @Published private(set) var codex = QuotaProviderSnapshot.pending
+    @Published private(set) var antigravity = QuotaProviderSnapshot.pending
 
     private var repeatingTimer: Timer?
     private var idleStopTimer: Timer?
@@ -22,6 +23,7 @@ class QuotaStore: ObservableObject {
     private var lastShowCursor = true
     private var lastShowGrok = true
     private var lastShowCodex = true
+    private var lastShowAntigravity = true
     private var lastTimerMinutes: Int?
     private var cancellables = Set<AnyCancellable>()
 
@@ -46,10 +48,11 @@ class QuotaStore: ObservableObject {
             SharedStore.preference.$quotaRefreshRate,
             SharedStore.menuComponents.$activeComponents
         )
-        let providerToggles = Publishers.CombineLatest3(
+        let providerToggles = Publishers.CombineLatest4(
             SharedStore.preference.$showCursorQuota,
             SharedStore.preference.$showGrokQuota,
-            SharedStore.preference.$showCodexQuota
+            SharedStore.preference.$showCodexQuota,
+            SharedStore.preference.$showAntigravityQuota
         )
         watchingInputs.combineLatest(providerToggles)
             .receive(on: DispatchQueue.main)
@@ -77,12 +80,15 @@ class QuotaStore: ObservableObject {
         let showCursor = SharedStore.preference.showCursorQuota
         let showGrok = SharedStore.preference.showGrokQuota
         let showCodex = SharedStore.preference.showCodexQuota
+        let showAntigravity = SharedStore.preference.showAntigravityQuota
         let enabledNewProvider = (showCursor && !lastShowCursor)
             || (showGrok && !lastShowGrok)
             || (showCodex && !lastShowCodex)
+            || (showAntigravity && !lastShowAntigravity)
         lastShowCursor = showCursor
         lastShowGrok = showGrok
         lastShowCodex = showCodex
+        lastShowAntigravity = showAntigravity
         if watching {
             idleStopTimer?.invalidate()
             idleStopTimer = nil
@@ -138,7 +144,8 @@ class QuotaStore: ObservableObject {
         let showCursor = SharedStore.preference.showCursorQuota
         let showGrok = SharedStore.preference.showGrokQuota
         let showCodex = SharedStore.preference.showCodexQuota
-        guard showCursor || showGrok || showCodex else {
+        let showAntigravity = SharedStore.preference.showAntigravityQuota
+        guard showCursor || showGrok || showCodex || showAntigravity else {
             return
         }
         isFetching = true
@@ -179,6 +186,17 @@ class QuotaStore: ObservableObject {
                         return
                     }
                     self.codex = QuotaProviderSnapshot.merging(previous: self.codex, incoming: snapshot)
+                }
+            }
+        }
+        if showAntigravity {
+            group.enter()
+            DispatchQueue.global(qos: .utility).async { [weak self] in
+                let snapshot = AntigravityQuotaClient.fetchSync()
+                DispatchQueue.main.async {
+                    defer { group.leave() }
+                    guard let self else { return }
+                    self.antigravity = QuotaProviderSnapshot.merging(previous: self.antigravity, incoming: snapshot)
                 }
             }
         }
