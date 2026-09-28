@@ -309,6 +309,9 @@
 "mcp.months_ago" = "%d個月前";
 "mcp.years_ago" = "%d年前";
 
+"quota.client_authentication_failed" = "用戶端驗證失敗，請檢查 eul2 更新。";
+"quota.previous_data" = "目前顯示上次取得的額度";
+
 "quota.antigravity" = "Antigravity";
 "quota.antigravity.gemini_5h" = "Gemini 5h";
 "quota.antigravity.gemini_weekly" = "Gemini Weekly";

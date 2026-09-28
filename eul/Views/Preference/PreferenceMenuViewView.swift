@@ -219,6 +219,7 @@ struct PreferenceEnabledOrderList<Item: Hashable, Label: View, Detail: View>: Vi
     let label: (Item) -> Label
     let detail: (Item) -> Detail
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var dragging: Item?
     @State private var dragOrigin: Int?
     @State private var dragTranslation: CGFloat = 0
@@ -244,7 +245,7 @@ struct PreferenceEnabledOrderList<Item: Hashable, Label: View, Detail: View>: Vi
     }
 
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: OrderListDragLayout.spacing) {
             ForEach(Array(items.enumerated()), id: \.element) { offset, item in
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(spacing: 8) {
@@ -279,7 +280,7 @@ struct PreferenceEnabledOrderList<Item: Hashable, Label: View, Detail: View>: Vi
                 .offset(y: rowOffset(index: offset, item: item))
                 .zIndex(dragging == item ? 1 : 0)
                 .shadow(color: dragging == item ? Color.black.opacity(0.16) : .clear, radius: dragging == item ? 5 : 0, y: 2)
-                .animation(dragging == item ? nil : .easeOut(duration: 0.16), value: previewDestination)
+                .animation(dragging == item || reduceMotion ? nil : .easeOut(duration: 0.16), value: previewDestination)
                 .background(GeometryReader { geometry in
                     Color.clear.preference(
                         key: OrderListFramePreferenceKey.self,
@@ -313,9 +314,12 @@ struct PreferenceEnabledOrderList<Item: Hashable, Label: View, Detail: View>: Vi
             .onChanged { value in
                 let translation = value.translation.height
                 if dragging == nil {
+                    guard frames.count == items.count, frames.allSatisfy({ $0.height > 0 }) else {
+                        return
+                    }
                     dragging = item
                     dragOrigin = offset
-                    draggedRowHeight = frames.indices.contains(offset) ? max(frames[offset].height, 36) : 0
+                    draggedRowHeight = frames[offset].height
                     dragMids = frames.map(\.midY)
                     previewDestination = offset
                     NSCursor.closedHand.set()
@@ -329,7 +333,9 @@ struct PreferenceEnabledOrderList<Item: Hashable, Label: View, Detail: View>: Vi
                 }
             }
             .onEnded { value in
-                let origin = dragOrigin ?? offset
+                guard dragging == item, let origin = dragOrigin else {
+                    return
+                }
                 let destination = dropIndex(from: origin, translation: value.translation.height)
                 withoutAnimation {
                     if destination != origin {
@@ -376,15 +382,12 @@ struct PreferenceEnabledOrderList<Item: Hashable, Label: View, Detail: View>: Vi
         if item == dragging {
             return dragTranslation
         }
-        let destination = previewDestination ?? origin
-        let height = draggedRowHeight
-        if origin < destination, index > origin, index <= destination {
-            return -height
-        }
-        if origin > destination, index >= destination, index < origin {
-            return height
-        }
-        return 0
+        return OrderListDragLayout.offset(
+            index: index,
+            origin: origin,
+            destination: previewDestination ?? origin,
+            draggedHeight: draggedRowHeight
+        )
     }
 }
 
@@ -404,6 +407,24 @@ extension PreferenceEnabledOrderList where Detail == EmptyView {
             label: label,
             detail: { _ in EmptyView() }
         )
+    }
+}
+
+enum OrderListDragLayout {
+    static let spacing: CGFloat = 4
+
+    static func offset(index: Int, origin: Int, destination: Int, draggedHeight: CGFloat) -> CGFloat {
+        guard draggedHeight > 0 else { return 0 }
+        // Removing one row closes the same height + gap for every displaced row,
+        // even when those rows have different heights.
+        let distance = draggedHeight + spacing
+        if origin < destination, index > origin, index <= destination {
+            return -distance
+        }
+        if origin > destination, index >= destination, index < origin {
+            return distance
+        }
+        return 0
     }
 }
 

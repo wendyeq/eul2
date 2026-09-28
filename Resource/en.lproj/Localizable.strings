@@ -330,6 +330,9 @@
 "menu.configure_page" = "Configure page";
 "menu.tab.all_hidden" = "All menu pages are hidden. Open Settings to show one.";
 
+"quota.client_authentication_failed" = "Client authentication failed. Check for eul2 updates.";
+"quota.previous_data" = "Showing previous quota data";
+
 "quota.antigravity" = "Antigravity";
 "quota.antigravity.gemini_5h" = "Gemini 5h";
 "quota.antigravity.gemini_weekly" = "Gemini Weekly";

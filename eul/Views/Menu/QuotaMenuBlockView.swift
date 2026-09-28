@@ -50,13 +50,15 @@ struct QuotaMenuBlockView: View {
                 || !meter.id.hasPrefix("claude_gpt_")
         }
         let title = provider.titleKey.localized()
+        let failureMessage = (snapshot.failureReason == .clientAuthentication
+            ? "quota.client_authentication_failed" : "quota.failed").localized()
         switch snapshot.kind {
         case .pending:
             EmptyView()
         case .unsigned:
             QuotaStatusRow(title: title, message: provider.signInKey.localized())
         case .failed where snapshot.meters.isEmpty:
-            QuotaStatusRow(title: title, message: "quota.failed".localized())
+            QuotaStatusRow(title: title, message: failureMessage)
         case .ready where snapshot.meters.isEmpty:
             QuotaStatusRow(title: title, message: "ui.empty".localized())
         case .ready, .failed:
@@ -68,8 +70,10 @@ struct QuotaMenuBlockView: View {
                     )
                 }
                 if snapshot.kind == .failed {
-                    Text("quota.failed".localized())
+                    Text(failureMessage + " · " + "quota.previous_data".localized())
                         .secondaryDisplayText()
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(width: MenuMetricGrid.rowWidth, alignment: .leading)
                 }
             }
         }
@@ -87,8 +91,7 @@ private struct QuotaStatusRow: View {
                 .lineLimit(1)
             Text(message)
                 .secondaryDisplayText()
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
+                .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
         }
         .frame(width: MenuMetricGrid.rowWidth, alignment: .leading)

@@ -16,10 +16,27 @@ import Foundation
         assert(AntigravityQuotaClient.fetchSync(d).kind == .unsigned)
         d.command = { executable, _ in executable.hasSuffix("security") ? String(data: plain, encoding: .utf8)! : "" }
         d.read = { _ in fatalError("Keychain must stop fallback") }
-        for (code, body) in [(401, "{}"), (400, #"{"error":"invalid_grant"}"#), (500, "{}")] {
-            d.http = { _ in (code, Data(body.utf8)) }
-            assert(AntigravityQuotaClient.fetchSync(d).kind == (code == 500 ? .failed : .unsigned))
+        let tokenFailures: [(Int, String, QuotaProviderSnapshot.Kind, QuotaProviderSnapshot.FailureReason?)] = [
+            (400, #"{"error":"invalid_client","error_description":"do not expose server details"}"#, .failed, .clientAuthentication),
+            (401, #"{"error":"invalid_client"}"#, .failed, .clientAuthentication),
+            (400, #"{"error":"invalid_grant"}"#, .unsigned, nil),
+            (401, #"{"error":"invalid_grant"}"#, .unsigned, nil),
+            (401, "{}", .unsigned, nil),
+            (400, #"{"error":"temporarily_unavailable"}"#, .failed, nil),
+            (500, "{}", .failed, nil),
+            (200, "{}", .failed, nil),
+            (400, "not JSON", .failed, nil),
+        ]
+        for (code, body, kind, reason) in tokenFailures {
+            var requests = 0
+            d.http = { _ in requests += 1; return (code, Data(body.utf8)) }
+            let result = AntigravityQuotaClient.fetchSync(d)
+            assert(result.kind == kind && result.failureReason == reason && result.meters.isEmpty)
+            assert(requests == 1, "Token failure must stop quota requests")
         }
+        d.http = { _ in nil }
+        assert(AntigravityQuotaClient.fetchSync(d) == .failedEmpty)
+        assert(QuotaProviderSnapshot(kind: .failed, meters: []).failureReason == nil)
         var calls = 0
         d.http = { req in
             calls += 1
@@ -84,7 +101,17 @@ import Foundation
             return (200, summary)
         }
         let official = AntigravityQuotaClient.fetchSync(d)
-        assert(official.kind == .ready && calls == 3)
+        assert(official.kind == .ready && calls == 3 && official.failureReason == nil)
+        let clientFailure = QuotaProviderSnapshot(kind: .failed, meters: [], failureReason: .clientAuthentication)
+        assert(QuotaProviderSnapshot.merging(previous: .pending, incoming: clientFailure) == clientFailure)
+        let stale = QuotaProviderSnapshot.merging(previous: snapshot, incoming: clientFailure)
+        assert(stale.kind == .failed && stale.failureReason == .clientAuthentication && stale.meters == snapshot.meters)
+        assert(QuotaProviderSnapshot.merging(previous: stale, incoming: clientFailure) == stale)
+        let genericFailure = QuotaProviderSnapshot.merging(previous: stale, incoming: .failedEmpty)
+        assert(genericFailure.kind == .failed && genericFailure.failureReason == nil && genericFailure.meters == snapshot.meters)
+        let recovered = QuotaProviderSnapshot.merging(previous: stale, incoming: official)
+        assert(recovered == official && recovered.failureReason == nil)
+        assert(QuotaProviderSnapshot.merging(previous: stale, incoming: .unsigned) == .unsigned)
         assert(official.meters[0].resetsAt == nil)
         assert(official.meters[1].resetsAt!.timeIntervalSince(official.meters[1].windowStart!) == 604_800)
         d.exists = { _ in false }

@@ -4,6 +4,9 @@ import Security
 
 /// Read-only credentials and ephemeral refresh; no credentials escape into snapshots.
 enum AntigravityQuotaClient {
+    private static let clientID = "1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com"
+    private static let clientSecret = "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"
+
     struct Dependencies {
         var command: (String, [String]) -> String = runCommand
         var read: (String) -> Data? = { try? Data(contentsOf: URL(fileURLWithPath: $0)) }
@@ -20,14 +23,19 @@ enum AntigravityQuotaClient {
         var components = URLComponents()
         components.queryItems = [
             URLQueryItem(name: "grant_type", value: "refresh_token"),
-            URLQueryItem(name: "client_id", value: "1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com"),
-            URLQueryItem(name: "client_secret", value: "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"),
+            URLQueryItem(name: "client_id", value: clientID),
+            URLQueryItem(name: "client_secret", value: clientSecret),
             URLQueryItem(name: "refresh_token", value: credential.refresh),
         ]
         refresh.httpBody = components.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B").data(using: .utf8)
         guard let (status, data) = dependencies.http(refresh) else { return .failedEmpty }
         let token = json(data)
-        if status == 401 || token?["error"] as? String == "invalid_grant" { return .unsigned }
+        let tokenError = token?["error"] as? String
+        // Client rejection is not an expired user session, even when Google returns 401.
+        if tokenError == "invalid_client" {
+            return QuotaProviderSnapshot(kind: .failed, meters: [], failureReason: .clientAuthentication)
+        }
+        if status == 401 || tokenError == "invalid_grant" { return .unsigned }
         guard (200..<300).contains(status), let access = token?["access_token"] as? String, !access.isEmpty else { return .failedEmpty }
         guard let assist = post("https://cloudcode-pa.googleapis.com/v1internal:loadCodeAssist", body: ["metadata": ["ideType": "ANTIGRAVITY"]], access: access, dependencies: dependencies),
               let project = projectID(assist),

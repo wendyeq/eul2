@@ -23,8 +23,13 @@ struct QuotaProviderSnapshot: Equatable {
         case failed
     }
 
+    enum FailureReason: Equatable {
+        case clientAuthentication
+    }
+
     var kind: Kind
     var meters: [QuotaMeter]
+    var failureReason: FailureReason? = nil
 
     static let pending = QuotaProviderSnapshot(kind: .pending, meters: [])
 
@@ -34,7 +39,9 @@ struct QuotaProviderSnapshot: Equatable {
 
     static func merging(previous: QuotaProviderSnapshot, incoming: QuotaProviderSnapshot) -> QuotaProviderSnapshot {
         if incoming.kind == .failed, !previous.meters.isEmpty {
-            return QuotaProviderSnapshot(kind: .failed, meters: previous.meters)
+            var result = incoming
+            result.meters = previous.meters
+            return result
         }
         return incoming
     }

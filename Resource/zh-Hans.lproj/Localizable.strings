@@ -331,6 +331,9 @@
 "menu.configure_page" = "配置页面";
 "menu.tab.all_hidden" = "所有菜单页均已隐藏，可在设置中重新开启。";
 
+"quota.client_authentication_failed" = "客户端认证失败，请检查 eul2 更新。";
+"quota.previous_data" = "当前显示上次获取的额度";
+
 "quota.antigravity" = "Antigravity";
 "quota.antigravity.gemini_5h" = "Gemini 5h";
 "quota.antigravity.gemini_weekly" = "Gemini 周额度";
