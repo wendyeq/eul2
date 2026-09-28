@@ -6,19 +6,18 @@
 //  (same path CodexBar uses for CLI RPC).
 //
 
+import Darwin
 import Foundation
 
 enum CodexQuotaClient {
-    private static let requestTimeout: TimeInterval = 15
-
-    static func fetchSync() -> QuotaProviderSnapshot {
+    static func fetchSync(requestTimeout: TimeInterval = 15) -> QuotaProviderSnapshot {
         guard hasAuthFile() else {
             return .unsigned
         }
         guard let executable = resolveCodexExecutable() else {
             return .failedEmpty
         }
-        return runAppServerProbe(executable: executable)
+        return runAppServerProbe(executable: executable, requestTimeout: requestTimeout)
     }
 
     private static func authURL() -> URL {
@@ -83,7 +82,7 @@ enum CodexQuotaClient {
         return path.isEmpty ? nil : path
     }
 
-    private static func runAppServerProbe(executable: String) -> QuotaProviderSnapshot {
+    private static func runAppServerProbe(executable: String, requestTimeout: TimeInterval) -> QuotaProviderSnapshot {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: executable)
         process.arguments = ["-s", "read-only", "-a", "never", "app-server"]
@@ -106,6 +105,9 @@ enum CodexQuotaClient {
 
         let writer = stdin.fileHandleForWriting
         let reader = stdout.fileHandleForReading
+        let deadline = Date().addingTimeInterval(requestTimeout)
+        var buffer = Data()
+        setNonBlocking(reader)
 
         guard
             send(writer, ["method": "initialize", "id": 1, "params": [
@@ -115,10 +117,10 @@ enum CodexQuotaClient {
                     "version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "2.2.3",
                 ],
             ]]),
-            let _ = waitForResponse(reader: reader, id: 1, process: process),
+            waitForResponse(reader: reader, id: 1, process: process, buffer: &buffer, deadline: deadline) != nil,
             send(writer, ["method": "initialized", "params": [:] as [String: Any]]),
             send(writer, ["method": "account/rateLimits/read", "id": 2, "params": [:] as [String: Any]]),
-            let rateLimits = waitForResponse(reader: reader, id: 2, process: process)
+            let rateLimits = waitForResponse(reader: reader, id: 2, process: process, buffer: &buffer, deadline: deadline)
         else {
             return .failedEmpty
         }
@@ -215,6 +217,8 @@ enum CodexQuotaClient {
             return false
         }
         payload.append(0x0A)
+        let previous = signal(SIGPIPE, SIG_IGN)
+        defer { _ = signal(SIGPIPE, previous) }
         do {
             try writer.write(contentsOf: payload)
             return true
@@ -223,34 +227,83 @@ enum CodexQuotaClient {
         }
     }
 
-    private static func waitForResponse(reader: FileHandle, id: Int, process: Process) -> [String: Any]? {
-        let deadline = Date().addingTimeInterval(requestTimeout)
-        var buffer = Data()
-        while Date() < deadline {
-            if !process.isRunning, buffer.isEmpty {
-                return nil
+    private static func setNonBlocking(_ reader: FileHandle) {
+        let fd = reader.fileDescriptor
+        let flags = fcntl(fd, F_GETFL)
+        guard flags >= 0 else {
+            return
+        }
+        _ = fcntl(fd, F_SETFL, flags | O_NONBLOCK)
+    }
+
+    private enum ReadChunk {
+        case bytes(Data)
+        case eof
+        case wouldBlock
+        case failed
+    }
+
+    private static func readChunk(_ reader: FileHandle) -> ReadChunk {
+        var storage = [UInt8](repeating: 0, count: 8192)
+        while true {
+            let count = Darwin.read(reader.fileDescriptor, &storage, storage.count)
+            if count > 0 {
+                return .bytes(Data(storage.prefix(count)))
             }
-            let chunk = reader.availableData
-            if chunk.isEmpty {
-                Thread.sleep(forTimeInterval: 0.05)
+            if count == 0 {
+                return .eof
+            }
+            if errno == EINTR {
                 continue
             }
-            buffer.append(chunk)
-            while let range = buffer.range(of: Data([0x0A])) {
-                let lineData = buffer.subdata(in: buffer.startIndex..<range.lowerBound)
-                buffer.removeSubrange(buffer.startIndex...range.lowerBound)
-                guard !lineData.isEmpty,
-                      let object = try? JSONSerialization.jsonObject(with: lineData) as? [String: Any]
-                else {
-                    continue
-                }
-                let responseId = (object["id"] as? Int) ?? (object["id"] as? NSNumber)?.intValue
-                if responseId == id {
-                    return object
-                }
+            if errno == EAGAIN || errno == EWOULDBLOCK {
+                return .wouldBlock
+            }
+            return .failed
+        }
+    }
+
+    /// Leaves bytes after the matched line in `buffer`. A later id often arrives in the same read.
+    private static func takeMatch(id: Int, buffer: inout Data) -> [String: Any]? {
+        while let range = buffer.range(of: Data([0x0A])) {
+            let lineData = buffer.subdata(in: buffer.startIndex..<range.lowerBound)
+            buffer.removeSubrange(buffer.startIndex...range.lowerBound)
+            guard !lineData.isEmpty,
+                  let object = try? JSONSerialization.jsonObject(with: lineData) as? [String: Any]
+            else {
+                continue
+            }
+            let responseId = (object["id"] as? Int) ?? (object["id"] as? NSNumber)?.intValue
+            if responseId == id {
+                return object
             }
         }
         return nil
+    }
+
+    private static func waitForResponse(
+        reader: FileHandle,
+        id: Int,
+        process: Process,
+        buffer: inout Data,
+        deadline: Date
+    ) -> [String: Any]? {
+        while Date() < deadline {
+            if let matched = takeMatch(id: id, buffer: &buffer) {
+                return matched
+            }
+            switch readChunk(reader) {
+            case .bytes(let chunk):
+                buffer.append(chunk)
+            case .eof:
+                return takeMatch(id: id, buffer: &buffer)
+            case .wouldBlock:
+                Thread.sleep(forTimeInterval: 0.05)
+            case .failed:
+                return nil
+            }
+        }
+        return takeMatch(id: id, buffer: &buffer)
     }
 
     private static func terminate(_ process: Process) {

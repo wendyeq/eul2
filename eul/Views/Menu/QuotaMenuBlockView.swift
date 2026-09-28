@@ -113,15 +113,15 @@ private struct QuotaMeterRow: View {
         return String(format: "%.1f%%", value)
     }
 
-    private var countdown: String {
-        QuotaCountdown.text(resetsAt: meter.resetsAt)
-    }
-
-    private var elapsedPercent: Double? {
-        QuotaWindowElapsed.percent(start: meter.windowStart, end: meter.resetsAt)
-    }
-
     var body: some View {
+        TimelineView(.periodic(from: .now, by: QuotaCountdown.displayTick)) { context in
+            meterRow(now: context.date)
+        }
+    }
+
+    private func meterRow(now: Date) -> some View {
+        let countdown = QuotaCountdown.text(resetsAt: meter.resetsAt, now: now)
+        let elapsedPercent = QuotaWindowElapsed.percent(start: meter.windowStart, end: meter.resetsAt, now: now)
         VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(title)
@@ -143,10 +143,10 @@ private struct QuotaMeterRow: View {
         .frame(width: MenuMetricGrid.rowWidth, alignment: .leading)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(title)
-        .accessibilityValue(accessibilityValue)
+        .accessibilityValue(accessibilityValue(countdown: countdown, elapsedPercent: elapsedPercent))
     }
 
-    private var accessibilityValue: String {
+    private func accessibilityValue(countdown: String, elapsedPercent: Double?) -> String {
         var parts = [percentText]
         if !countdown.isEmpty {
             parts.append(countdown)

@@ -48,6 +48,9 @@ struct QuotaProviderSnapshot: Equatable {
 }
 
 enum QuotaCountdown {
+    /// Reset labels are minute-resolution. A stable meter must still be re-read on this cadence.
+    static let displayTick: TimeInterval = 60
+
     static func text(resetsAt: Date?, now: Date = Date()) -> String {
         guard let resetsAt else {
             return ""
