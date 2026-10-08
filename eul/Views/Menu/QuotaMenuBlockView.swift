@@ -122,7 +122,7 @@ private struct QuotaMeterRow: View {
     private func meterRow(now: Date) -> some View {
         let countdown = QuotaCountdown.text(resetsAt: meter.resetsAt, now: now)
         let elapsedPercent = QuotaWindowElapsed.percent(start: meter.windowStart, end: meter.resetsAt, now: now)
-        VStack(alignment: .leading, spacing: 4) {
+        return VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(title)
                     .font(.system(size: 11, weight: .medium))

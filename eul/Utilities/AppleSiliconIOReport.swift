@@ -28,11 +28,13 @@ final class AppleSiliconIOReport {
 
     private typealias SubscriptionRef = OpaquePointer
 
-    private var copyChannelsInGroup: (@convention(c) (CFString, CFString?, UInt64, UInt64, UInt64) -> CFMutableDictionary?)?
+    // dlsym cannot infer the Create/Copy ownership rule. Consume each +1
+    // reference explicitly so ARC releases replaced samples and temporary deltas.
+    private var copyChannelsInGroup: (@convention(c) (CFString, CFString?, UInt64, UInt64, UInt64) -> Unmanaged<CFMutableDictionary>?)?
     private var mergeChannels: (@convention(c) (CFMutableDictionary, CFMutableDictionary, CFTypeRef?) -> Void)?
     private var createSubscription: (@convention(c) (UnsafeMutableRawPointer?, CFMutableDictionary, UnsafeMutablePointer<CFMutableDictionary?>?, UInt64, CFTypeRef?) -> SubscriptionRef?)?
-    private var createSamples: (@convention(c) (SubscriptionRef?, CFMutableDictionary?, CFTypeRef?) -> CFDictionary?)?
-    private var createSamplesDelta: (@convention(c) (CFDictionary?, CFDictionary?, CFTypeRef?) -> CFDictionary?)?
+    private var createSamples: (@convention(c) (SubscriptionRef?, CFMutableDictionary?, CFTypeRef?) -> Unmanaged<CFDictionary>?)?
+    private var createSamplesDelta: (@convention(c) (CFDictionary?, CFDictionary?, CFTypeRef?) -> Unmanaged<CFDictionary>?)?
     private var iterate: (@convention(c) (CFDictionary?, @escaping (CFDictionary) -> Int32) -> Void)?
     private var channelGroup: (@convention(c) (CFDictionary) -> CFString?)?
     private var channelSubGroup: (@convention(c) (CFDictionary) -> CFString?)?
@@ -84,7 +86,7 @@ final class AppleSiliconIOReport {
             return
         }
 
-        guard let sample = createSamples(subscription, subscribedChannels, nil) else {
+        guard let sample = createSamples(subscription, subscribedChannels, nil)?.takeRetainedValue() else {
             return
         }
 
@@ -96,7 +98,7 @@ final class AppleSiliconIOReport {
             return
         }
 
-        guard let delta = createSamplesDelta(previousSample, sample, nil) else {
+        guard let delta = createSamplesDelta(previousSample, sample, nil)?.takeRetainedValue() else {
             return
         }
         var cluster = clusterUsageFromTicks()
@@ -162,7 +164,7 @@ final class AppleSiliconIOReport {
         var merged: CFMutableDictionary?
         for (group, sub) in groups {
             let subCF = sub.map { $0 as CFString }
-            guard let channels = copyChannelsInGroup(group as CFString, subCF, 0, 0, 0) else {
+            guard let channels = copyChannelsInGroup(group as CFString, subCF, 0, 0, 0)?.takeRetainedValue() else {
                 continue
             }
             if merged == nil {

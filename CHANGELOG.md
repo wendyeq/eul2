@@ -2,6 +2,19 @@
 
 本分支基于 [gao-sun/eul](https://github.com/gao-sun/eul) 继续开发。上游最后广泛使用的 Intel 版本为 **[1.6.2](https://github.com/gao-sun/eul/releases/tag/1.6.2)**。
 
+## [2.2.4] — 2026-10-08
+
+面向 **Apple Silicon（arm64）**、**macOS 13+**。营销版本 **2.2.4**（build 75）。安装仍为 **`eul2.app`** / `com.wendyeq.eul2`。ad-hoc 签名，首次需右键打开。
+
+### 内存
+
+- 修复 IOReport 硬件采样的内存泄漏：动态加载的 Create/Copy 函数显式转移返回对象的所有权，旧采样和临时差值对象不再随刷新持续积累。
+- 增加真实硬件采样回归测试，检查连续刷新时的内存增长；不改变硬件数据显示或刷新频率。
+
+### 额度
+
+- 钉住额度菜单时，额度行每分钟刷新，保持倒计时与窗口进度更新。
+
 ## [2.2.3] — 2026-09-29
 
 面向 **Apple Silicon（arm64）**、**macOS 13+**。营销版本 **2.2.3**（build 74）。安装仍为 **`eul2.app`** / `com.wendyeq.eul2`。ad-hoc 签名，首次需右键打开。
