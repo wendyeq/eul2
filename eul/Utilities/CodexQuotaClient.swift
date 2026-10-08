@@ -284,7 +284,7 @@ enum CodexQuotaClient {
     private static func waitForResponse(
         reader: FileHandle,
         id: Int,
-        process: Process,
+        process _: Process,
         buffer: inout Data,
         deadline: Date
     ) -> [String: Any]? {
@@ -293,7 +293,7 @@ enum CodexQuotaClient {
                 return matched
             }
             switch readChunk(reader) {
-            case .bytes(let chunk):
+            case let .bytes(chunk):
                 buffer.append(chunk)
             case .eof:
                 return takeMatch(id: id, buffer: &buffer)
