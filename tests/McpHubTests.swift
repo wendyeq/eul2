@@ -178,5 +178,92 @@ import Foundation
         check(await watchHub.currentCatalog().servers.first { $0.id == "a" }?.command == "rewritten", "second replace reloaded the catalog")
         await watchHub.stop()
         print("PASS: atomic catalog replacement rearms the watcher")
+
+        let installHub = McpHub()
+        await Fixture.shared.configure()
+        try McpCatalogStore.save(McpCatalog(version: 1, port: 19840, servers: [
+            McpServerEntry(id: "a", command: "keep"),
+            McpServerEntry(id: "b", enabled: false, command: "side"),
+        ]))
+        await Fixture.shared.setOnPut {
+            await installHub.fixtureEnable(id: "b")
+        }
+        let removalsBefore = await Fixture.shared.removals
+        await installHub.start()
+        await eventually("install published beside the other server") {
+            let servers = await installHub.snapshot().servers
+            let kept = servers.first { $0.id == "a" }
+            let side = servers.first { $0.id == "b" }
+            return kept?.connected == true && kept?.connecting == false && side?.connected == true
+        }
+        check(await Fixture.shared.commands.filter { $0 == "keep" }.count == 1, "same entry is not started twice while its client is being published")
+        check(await Fixture.shared.removals == removalsBefore, "publishing install is not terminated by an interleaved catalog apply")
+        await installHub.stop()
+        print("PASS: catalog apply during client install keeps the same upstream")
+
+        let relaunchHub = McpHub()
+        await Fixture.shared.configure(connect: true)
+        await Fixture.shared.armDeadHandshake("a")
+        try McpCatalogStore.save(McpCatalog(version: 1, port: 19840, servers: [
+            McpServerEntry(id: "a", command: "old"),
+        ]))
+        let relaunchBefore = await Fixture.shared.connects.count
+        await relaunchHub.start()
+        await eventually("dead relaunch held") {
+            let count = await Fixture.shared.connects.count
+            let waiting = await Fixture.shared.connectWaiter != nil
+            return count == relaunchBefore + 1 && waiting
+        }
+        await Fixture.shared.resumeConnect()
+        await eventually("replacement connect held") {
+            let count = await Fixture.shared.connects.count
+            let waiting = await Fixture.shared.connectWaiter != nil
+            return count == relaunchBefore + 2 && waiting
+        }
+        await relaunchHub.fixtureReplaceCommand(id: "a", command: "new")
+        await Fixture.shared.resumeConnect()
+        await eventually("edited relaunch held") {
+            let command = await Fixture.shared.commands.last
+            let waiting = await Fixture.shared.connectWaiter != nil
+            return command == "new" && waiting
+        }
+        let heldConnects = await Fixture.shared.connects.count
+        await relaunchHub.fixtureApplyCatalog()
+        check(await Fixture.shared.connects.count == heldConnects, "stale relaunch cleanup must not drop the replacement attempt")
+        check(await relaunchHub.snapshot().servers.first?.connecting == true, "replacement attempt stays in flight")
+        await Fixture.shared.releaseConnect()
+        await eventually("edited relaunch connected") {
+            let server = await relaunchHub.snapshot().servers.first
+            return server?.connected == true && server?.connecting == false
+        }
+        check(await Fixture.shared.commands.last == "new", "crash relaunch uses the edited command")
+        await relaunchHub.stop()
+        print("PASS: config edited during crash relaunch is connected, and the old attempt cannot clear it")
+
+        let cancelHub = McpHub()
+        await Fixture.shared.configure(http: true, cancelHTTP: true)
+        try McpCatalogStore.save(McpCatalog(version: 1, port: 19840, servers: [
+            McpServerEntry(id: "a", command: "keep"),
+        ]))
+        let cancelStart = Task { await cancelHub.start() }
+        await eventually("readiness held") { await Fixture.shared.httpWaiter != nil }
+        await cancelHub.stop()
+        await cancelStart.value
+        check(await Fixture.shared.httpLive == false, "stop cancels readiness without releaseHTTP")
+        check(await cancelHub.snapshot().listening == false, "cancelled readiness stays stopped")
+        print("PASS: stop unblocks a pending HTTP start without an external resume")
+
+        let earlyHub = McpHub()
+        await Fixture.shared.configure(cancelHTTP: true, beforePublish: true)
+        let earlyStart = Task { await earlyHub.start() }
+        await eventually("publish held") { await Fixture.shared.publishWaiter != nil }
+        let earlyStop = Task { await earlyHub.stop() }
+        await eventually("stop arrived before publish") { await Fixture.shared.stopBeforePublish }
+        await Fixture.shared.releasePublish()
+        await earlyStop.value
+        await earlyStart.value
+        check(await earlyHub.snapshot().listening == false, "stop before listener publish finishes shutdown")
+        check(await Fixture.shared.httpLive == false, "listener is not published after a pre-publish stop")
+        print("PASS: stop before listener publish unblocks startup")
     }
 }

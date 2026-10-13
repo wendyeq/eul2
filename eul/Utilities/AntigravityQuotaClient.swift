@@ -154,29 +154,50 @@ enum AntigravityQuotaClient {
         )
         switch keychain {
         case .timedOut:
-            if let fallback = fallbackCredential(dependencies) { return .found(fallback) }
-            return .timedOut
+            switch fallbackCredential(dependencies) {
+            case let .found(value):
+                return .found(value)
+            case .missing, .timedOut:
+                return .timedOut
+            }
         case let .output(keychain):
             if let value = stored(Data(keychain.utf8)) { return .found(value) }
-            if let fallback = fallbackCredential(dependencies) { return .found(fallback) }
-            return .missing
+            switch fallbackCredential(dependencies) {
+            case let .found(value):
+                return .found(value)
+            case .timedOut:
+                return .timedOut
+            case .missing:
+                return .missing
+            }
         }
     }
 
-    private static func fallbackCredential(_ dependencies: Dependencies) -> Credential? {
+    private enum FallbackLookup {
+        case found(Credential)
+        case missing
+        case timedOut
+    }
+
+    private static func fallbackCredential(_ dependencies: Dependencies) -> FallbackLookup {
         let jetski = dependencies.home + "/.gemini/jetski-standalone-oauth-token"
-        if let value = stored(dependencies.read(jetski)) { return value }
+        if let value = stored(dependencies.read(jetski)) { return .found(value) }
 
         let base = dependencies.home + "/Library/Application Support/"
         let root = base + (dependencies.exists(base + "Antigravity IDE") ? "Antigravity IDE" : "Antigravity")
         let path = root + "/User/globalStorage/state.vscdb"
-        guard dependencies.exists(path) else { return nil }
-        let value = commandOutput(dependencies.command(
+        guard dependencies.exists(path) else { return .missing }
+        switch dependencies.command(
             "/usr/bin/sqlite3",
             ["-readonly", path, "SELECT value FROM ItemTable WHERE key = 'antigravityUnifiedStateSync.oauthToken';"]
-        )).trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let data = Data(base64Encoded: value) else { return nil }
-        return legacy(data)
+        ) {
+        case .timedOut:
+            return .timedOut
+        case let .output(value):
+            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let data = Data(base64Encoded: trimmed), let credential = legacy(data) else { return .missing }
+            return .found(credential)
+        }
     }
 
     /// Length-delimited protobuf fields; skips other supported wire types with bounds checks.
@@ -229,12 +250,26 @@ enum AntigravityQuotaClient {
     }
 
     private static func localQuota(_ d: Dependencies) -> QuotaProviderSnapshot {
-        let processes = commandOutput(d.command("/bin/ps", ["-axo", "pid=,command="]))
+        let processes: String
+        switch d.command("/bin/ps", ["-axo", "pid=,command="]) {
+        case .timedOut:
+            return .failedEmpty
+        case let .output(output):
+            processes = output
+        }
         var attempted = false
+        var discoveryTimedOut = false
         for line in processes.components(separatedBy: .newlines) where line.lowercased().contains("antigravity") && line.contains("language_server") {
             let parts = line.split(whereSeparator: { $0.isWhitespace }).map(String.init)
             guard let pid = parts.first, let flag = parts.firstIndex(of: "--csrf_token"), flag + 1 < parts.count else { continue }
-            let ports = commandOutput(d.command("/usr/sbin/lsof", ["-nP", "-a", "-p", pid, "-iTCP", "-sTCP:LISTEN", "-Fn"]))
+            let ports: String
+            switch d.command("/usr/sbin/lsof", ["-nP", "-a", "-p", pid, "-iTCP", "-sTCP:LISTEN", "-Fn"]) {
+            case .timedOut:
+                discoveryTimedOut = true
+                continue
+            case let .output(output):
+                ports = output
+            }
             for entry in ports.components(separatedBy: .newlines) where entry.hasPrefix("n") {
                 guard let port = entry.split(separator: ":").last.flatMap({ Int($0) }), (1...65535).contains(port) else { continue }
                 for scheme in ["https", "http"] {
@@ -252,12 +287,8 @@ enum AntigravityQuotaClient {
                 }
             }
         }
-        return attempted ? .failedEmpty : .unsigned
-    }
-
-    private static func commandOutput(_ result: CommandResult) -> String {
-        if case let .output(value) = result { return value }
-        return ""
+        if attempted || discoveryTimedOut { return .failedEmpty }
+        return .unsigned
     }
 
     private static func post(_ url: String, body: [String: Any], access: String, dependencies: Dependencies) -> [String: Any]? {
@@ -321,21 +352,39 @@ enum AntigravityQuotaClient {
         process.standardOutput = pipe
         process.standardError = FileHandle.nullDevice
         do { try process.run() } catch { return .output("") }
-        let timedOut = TimeoutFlag()
+        let completion = FirstCommandResult()
         DispatchQueue.global().asyncAfter(deadline: .now() + timeout) {
+            guard process.isRunning else { return }
+            guard completion.commitTimeout() else { return }
             if process.isRunning {
-                timedOut.value = true
                 process.terminate()
             }
         }
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
         process.waitUntilExit()
-        if timedOut.value { return .timedOut }
-        guard process.terminationStatus == 0 else { return .output("") }
-        return .output(String(data: data, encoding: .utf8) ?? "")
+        let output = String(data: data, encoding: .utf8) ?? ""
+        let finished: CommandResult = process.terminationStatus == 0 ? .output(output) : .output("")
+        return completion.commitExit(finished)
     }
 
-    private final class TimeoutFlag: @unchecked Sendable {
-        var value = false
+    private final class FirstCommandResult: @unchecked Sendable {
+        private let lock = NSLock()
+        private var result: CommandResult?
+
+        func commitTimeout() -> Bool {
+            lock.lock()
+            defer { lock.unlock() }
+            guard result == nil else { return false }
+            result = .timedOut
+            return true
+        }
+
+        func commitExit(_ result: CommandResult) -> CommandResult {
+            lock.lock()
+            defer { lock.unlock() }
+            if let existing = self.result { return existing }
+            self.result = result
+            return result
+        }
     }
 }

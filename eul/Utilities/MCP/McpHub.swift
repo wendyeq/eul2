@@ -15,6 +15,7 @@ actor McpHub {
     private var connectedEntries: [String: McpServerEntry] = [:]
     private var crashRelaunchUsed: Set<String> = []
     private var connecting: Set<String> = []
+    private var connectAttempt: [String: UUID] = [:]
     private var catalogSource: DispatchSourceFileSystemObject?
     private var catalogFileHandle: FileHandle?
     private var ignoreCatalogWrite = false
@@ -74,6 +75,7 @@ actor McpHub {
         connectedEntries.removeAll()
         crashRelaunchUsed.removeAll()
         connecting.removeAll()
+        connectAttempt.removeAll()
         listening = false
         lastError = nil
         // Readiness does not resume on .waiting or .cancelled. Cancel that
@@ -164,6 +166,7 @@ actor McpHub {
                 connectedEntries.removeAll()
                 crashRelaunchUsed.removeAll()
                 connecting.removeAll()
+                connectAttempt.removeAll()
                 notify()
                 return
             }
@@ -189,13 +192,16 @@ actor McpHub {
                 continue
             }
             changed = true
-            connecting.insert(entry.id)
+            let attempt = beginAttempt(entry.id)
             if current != nil {
                 await aggregator.removeClient(id: entry.id)
-                guard running, generation == gen else { return }
+                guard running, generation == gen else {
+                    releaseAttempt(entry.id, matching: attempt)
+                    return
+                }
             }
             Task {
-                await self.finishConnect(entry: entry, generation: gen)
+                await self.finishConnect(entry: entry, generation: gen, attempt: attempt)
             }
         }
 
@@ -206,39 +212,81 @@ actor McpHub {
         notify()
     }
 
-    private func finishConnect(entry: McpServerEntry, generation gen: Int) async {
+    private func beginAttempt(_ id: String) -> UUID {
+        let token = UUID()
+        connecting.insert(id)
+        connectAttempt[id] = token
+        return token
+    }
+
+    private func releaseAttempt(_ id: String, matching token: UUID) {
+        guard connectAttempt[id] == token else { return }
+        connectAttempt[id] = nil
+        connecting.remove(id)
+    }
+
+    private func reapplyEnabled(_ id: String, generation gen: Int) async {
         guard running, generation == gen else { return }
-        let client = await connectWithRetry(entry, generation: gen)
-        // Clear before any exit handling or reapply. Otherwise a process that
-        // is already dead, or a catalog edit made while connecting, is ignored
-        // and nothing schedules another attempt.
-        if generation == gen { connecting.remove(entry.id) }
-        guard running, generation == gen, catalog.servers.contains(entry) else {
-            discard(client)
-            if running, generation == gen,
-               catalog.servers.contains(where: { $0.id == entry.id && $0.enabled })
-            {
-                await applyCatalog(restartHTTP: false)
-            }
+        guard catalog.servers.contains(where: { $0.id == id && $0.enabled }) else { return }
+        await applyCatalog(restartHTTP: false)
+    }
+
+    private func finishConnect(entry: McpServerEntry, generation gen: Int, attempt: UUID) async {
+        guard running, generation == gen else {
+            releaseAttempt(entry.id, matching: attempt)
             return
         }
-        if let client {
-            await aggregator.putClient(client)
-            guard running, generation == gen else { return }
-            connectedEntries[entry.id] = entry
-            crashRelaunchUsed.remove(entry.id)
-            await aggregator.clearFailed(id: entry.id)
-            guard running, generation == gen else { return }
-            if let process = client.process, !process.isRunning {
-                await handleUpstreamExit(id: entry.id, process: process, generation: gen)
-                guard running, generation == gen else { return }
-            }
-            await http.notifyToolsListChanged()
-            guard running, generation == gen else { return }
-        } else {
+        let client = await connectWithRetry(entry, generation: gen)
+        guard running, generation == gen else {
+            discard(client)
+            releaseAttempt(entry.id, matching: attempt)
+            return
+        }
+        guard catalog.servers.contains(entry) else {
+            discard(client)
+            releaseAttempt(entry.id, matching: attempt)
+            await reapplyEnabled(entry.id, generation: gen)
+            return
+        }
+        guard let client else {
             connectedEntries[entry.id] = nil
             crashRelaunchUsed.remove(entry.id)
+            releaseAttempt(entry.id, matching: attempt)
+            notify()
+            return
         }
+        await aggregator.putClient(client)
+        guard running, generation == gen else {
+            discard(client)
+            releaseAttempt(entry.id, matching: attempt)
+            return
+        }
+        guard catalog.servers.contains(entry) else {
+            discard(client)
+            releaseAttempt(entry.id, matching: attempt)
+            await reapplyEnabled(entry.id, generation: gen)
+            return
+        }
+        connectedEntries[entry.id] = entry
+        crashRelaunchUsed.remove(entry.id)
+        await aggregator.clearFailed(id: entry.id)
+        guard running, generation == gen else {
+            releaseAttempt(entry.id, matching: attempt)
+            return
+        }
+        let stale = !catalog.servers.contains(entry)
+        let deadProcess = client.process.flatMap { $0.isRunning ? nil : $0 }
+        releaseAttempt(entry.id, matching: attempt)
+        if stale {
+            await reapplyEnabled(entry.id, generation: gen)
+            return
+        }
+        if let deadProcess {
+            await handleUpstreamExit(id: entry.id, process: deadProcess, generation: gen)
+            guard running, generation == gen else { return }
+        }
+        await http.notifyToolsListChanged()
+        guard running, generation == gen else { return }
         notify()
     }
 
@@ -294,10 +342,8 @@ actor McpHub {
             return
         }
 
-        connecting.insert(id)
-        defer {
-            if generation == gen { connecting.remove(id) }
-        }
+        let attempt = beginAttempt(id)
+        defer { releaseAttempt(id, matching: attempt) }
         await aggregator.removeClient(id: id)
         guard running, generation == gen else { return }
 
@@ -313,22 +359,33 @@ actor McpHub {
 
         do {
             let client = try await connectEntry(entry, generation: gen)
-            guard running, generation == gen,
-                  catalog.servers.contains(entry), entry.enabled
-            else {
+            guard running, generation == gen, catalog.servers.contains(entry) else {
                 discard(client)
+                releaseAttempt(id, matching: attempt)
+                await reapplyEnabled(id, generation: gen)
                 return
             }
             await aggregator.putClient(client)
-            guard running, generation == gen else { return }
+            guard running, generation == gen, catalog.servers.contains(entry) else {
+                discard(client)
+                releaseAttempt(id, matching: attempt)
+                await reapplyEnabled(id, generation: gen)
+                return
+            }
             connectedEntries[id] = entry
             await aggregator.clearFailed(id: id)
             guard running, generation == gen else { return }
-            if let process = client.process, !process.isRunning {
-                connecting.remove(id)
-                await handleUpstreamExit(id: id, process: process, generation: gen)
+            if !catalog.servers.contains(entry) {
+                releaseAttempt(id, matching: attempt)
+                await reapplyEnabled(id, generation: gen)
                 return
             }
+            if let dead = client.process, !dead.isRunning {
+                releaseAttempt(id, matching: attempt)
+                await handleUpstreamExit(id: id, process: dead, generation: gen)
+                return
+            }
+            releaseAttempt(id, matching: attempt)
             await http.notifyToolsListChanged()
             guard running, generation == gen else { return }
             notify()

@@ -146,6 +146,64 @@ import Foundation
         assert(AntigravityQuotaClient.runCommand("/bin/sleep", ["2"], timeout: 0.2) == .timedOut)
         assert(AntigravityQuotaClient.runCommand("/bin/echo", ["ok"], timeout: 2) == .output("ok\n"))
         assert(AntigravityQuotaClient.runCommand("/usr/bin/false", [], timeout: 2) == .output(""))
+        d.read = { _ in nil }
+        d.exists = { _ in false }
+        d.http = { _ in fatalError("discovery timeout must not call HTTP") }
+        d.command = { executable, _ in executable.hasSuffix("ps") ? .timedOut : .output("") }
+        let psMissed = AntigravityQuotaClient.fetchSync(d)
+        assert(psMissed.kind == .failed && psMissed != .unsigned)
+        let psPreserved = QuotaProviderSnapshot.merging(previous: official, incoming: psMissed)
+        assert(psPreserved.kind == .failed && psPreserved.failureReason == nil && psPreserved.meters == official.meters)
+        d.command = { executable, _ in
+            if executable.hasSuffix("ps") { return .output("42 /fixture/antigravity/language_server --csrf_token fixture-csrf") }
+            if executable.hasSuffix("lsof") { return .timedOut }
+            return .output("")
+        }
+        let lsofMissed = AntigravityQuotaClient.fetchSync(d)
+        assert(lsofMissed.kind == .failed && lsofMissed != .unsigned)
+        assert(QuotaProviderSnapshot.merging(previous: official, incoming: lsofMissed).meters == official.meters)
+        d.exists = { path in path.hasSuffix("state.vscdb") }
+        d.command = { executable, _ in
+            if executable.hasSuffix("sqlite3") { return .timedOut }
+            if executable.hasSuffix("ps") { return .output("") }
+            return .output("")
+        }
+        let sqliteMissed = AntigravityQuotaClient.fetchSync(d)
+        assert(sqliteMissed.kind == .failed && sqliteMissed != .unsigned)
+        assert(QuotaProviderSnapshot.merging(previous: official, incoming: sqliteMissed).meters == official.meters)
+        assertDeadlineRace()
         print("Antigravity fixture tests passed")
+    }
+
+    static func assertDeadlineRace() {
+        let lock = NSLock()
+        let group = DispatchGroup()
+        var boundary: [AntigravityQuotaClient.CommandResult] = []
+        for _ in 0..<24 {
+            group.enter()
+            DispatchQueue.global().async {
+                let value = AntigravityQuotaClient.runCommand("/bin/sleep", ["0.05"], timeout: 0.05)
+                lock.lock()
+                boundary.append(value)
+                lock.unlock()
+                group.leave()
+            }
+        }
+        assert(group.wait(timeout: .now() + 30) == .success)
+        assert(boundary.count == 24)
+        assert(boundary.allSatisfy { $0 == .timedOut || $0 == .output("") })
+        var overruns: [AntigravityQuotaClient.CommandResult] = []
+        for _ in 0..<8 {
+            group.enter()
+            DispatchQueue.global().async {
+                let value = AntigravityQuotaClient.runCommand("/bin/sleep", ["2"], timeout: 0.2)
+                lock.lock()
+                overruns.append(value)
+                lock.unlock()
+                group.leave()
+            }
+        }
+        assert(group.wait(timeout: .now() + 30) == .success)
+        assert(overruns.count == 8 && overruns.allSatisfy { $0 == .timedOut })
     }
 }
