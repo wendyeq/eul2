@@ -307,6 +307,9 @@
 "mcp.months_ago" = "%dmo ago";
 "mcp.years_ago" = "%dy ago";
 
+"quota.client_authentication_failed" = "Falha na autenticação do cliente. Verifique as atualizações do eul2.";
+"quota.previous_data" = "Mostrando os dados de cota anteriores";
+
 "quota.antigravity" = "Antigravity";
 "quota.antigravity.gemini_5h" = "Gemini 5h";
 "quota.antigravity.gemini_weekly" = "Gemini Weekly";

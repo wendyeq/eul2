@@ -27,13 +27,13 @@ enum McpConnectCLI {
             return 1
         }
         do {
-            let client = Client(name: "eul-mcp-connect", version: "2.2.3")
+            let client = Client(name: "eul-mcp-connect", version: Self.productVersion)
             let transport = HTTPClientTransport(endpoint: url, streaming: true)
             _ = try await client.connect(transport: transport)
 
             let server = Server(
                 name: "eul2",
-                version: "2.2.3",
+                version: Self.productVersion,
                 capabilities: .init(
                     prompts: .init(listChanged: true),
                     resources: .init(listChanged: true),
@@ -75,6 +75,10 @@ enum McpConnectCLI {
             fputs("eul mcp-connect: \(error.localizedDescription)\n", stderr)
             return 1
         }
+    }
+
+    private static var productVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "2.2.4"
     }
 
     private static func probe(host: String, port: UInt16, timeout: TimeInterval) async -> Bool {

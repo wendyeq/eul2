@@ -29,6 +29,8 @@ actor Fixture {
     var httpStarts = 0
     var httpLive = false
     var connects: [String] = []
+    var commands: [String?] = []
+    var deadIds: Set<String> = []
     var failures = 0
     var toolsNotifications = 0
     var shutdowns = 0
@@ -39,7 +41,10 @@ actor Fixture {
     var connectWaiter: CheckedContinuation<Void, Never>?
     func configure(http: Bool = false, connect: Bool = false, fail: Bool = false) {
         holdHTTP = http; holdConnect = connect; failConnect = fail
+        deadIds.removeAll()
     }
+
+    func armDeadHandshake(_ id: String) { deadIds.insert(id) }
 
     func startHTTP() async {
         httpStarts += 1
@@ -50,11 +55,15 @@ actor Fixture {
     func releaseHTTP() { holdHTTP = false; httpWaiter?.resume(); httpWaiter = nil }
     func releaseConnect() { holdConnect = false; connectWaiter?.resume(); connectWaiter = nil }
     func stopHTTP() { httpLive = false }
-    func connect(_ id: String) async throws -> McpUpstreamClient {
-        connects.append(id)
+    func connect(_ entry: McpServerEntry) async throws -> McpUpstreamClient {
+        connects.append(entry.id)
+        commands.append(entry.command)
         if holdConnect { await withCheckedContinuation { connectWaiter = $0 } }
         if failConnect { throw NSError(domain: "fixture", code: 1) }
-        return McpUpstreamClient(id: id)
+        if deadIds.remove(entry.id) != nil {
+            return McpUpstreamClient(id: entry.id, process: Process())
+        }
+        return McpUpstreamClient(id: entry.id)
     }
 
     func shutdownEntered() { shutdowns += 1 }
@@ -91,6 +100,6 @@ actor McpLoopbackHTTP {
 enum McpUpstream {
     struct TimeoutError: Error {}
     static func connect(_ entry: McpServerEntry, onProcessExit _: @escaping @Sendable (Process) -> Void) async throws -> McpUpstreamClient {
-        try await Fixture.shared.connect(entry.id)
+        try await Fixture.shared.connect(entry)
     }
 }

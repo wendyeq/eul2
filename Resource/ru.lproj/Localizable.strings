@@ -307,6 +307,9 @@
 "mcp.months_ago" = "%dmo ago";
 "mcp.years_ago" = "%dy ago";
 
+"quota.client_authentication_failed" = "Не удалось выполнить аутентификацию клиента. Проверьте обновления eul2.";
+"quota.previous_data" = "Показаны ранее полученные данные квоты";
+
 "quota.antigravity" = "Antigravity";
 "quota.antigravity.gemini_5h" = "Gemini 5h";
 "quota.antigravity.gemini_weekly" = "Gemini Weekly";

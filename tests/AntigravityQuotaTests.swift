@@ -7,14 +7,14 @@ import Foundation
         assert(AntigravityQuotaClient.stored(Data(("go-keyring-base64:" + plain.base64EncodedString()).utf8))?.id == "fixture-id")
         var d = AntigravityQuotaClient.Dependencies()
         d.home = "/fixture"
-        d.command = { _, _ in "" }
+        d.command = { _, _ in .output("") }
         d.exists = { _ in false }
         d.read = { path in assert(path.hasSuffix("jetski-standalone-oauth-token")); return plain }
         d.http = { _ in fatalError("No live HTTP allowed") }
         assert(AntigravityQuotaClient.credential(d)?.refresh == "fixture-refresh")
         d.read = { _ in nil }
         assert(AntigravityQuotaClient.fetchSync(d).kind == .unsigned)
-        d.command = { executable, _ in executable.hasSuffix("security") ? String(data: plain, encoding: .utf8)! : "" }
+        d.command = { executable, _ in .output(executable.hasSuffix("security") ? String(data: plain, encoding: .utf8)! : "") }
         d.read = { _ in fatalError("Keychain must stop fallback") }
         let tokenFailures: [(Int, String, QuotaProviderSnapshot.Kind, QuotaProviderSnapshot.FailureReason?)] = [
             (400, #"{"error":"invalid_client","error_description":"do not expose server details"}"#, .failed, .clientAuthentication),
@@ -70,17 +70,17 @@ import Foundation
         d.read = { _ in nil }
         d.exists = { path in path.contains("Antigravity IDE") || path.hasSuffix("state.vscdb") }
         d.command = { executable, args in
-            if executable.hasSuffix("security") { return "" }
+            if executable.hasSuffix("security") { return .output("") }
             assert(executable.hasSuffix("sqlite3"))
             assert(args[0] == "-readonly" && args[1].contains("Antigravity IDE/"))
-            return topic.base64EncodedString()
+            return .output(topic.base64EncodedString())
         }
         assert(AntigravityQuotaClient.credential(d)?.id == "legacy-id")
         d.exists = { path in !path.contains("Antigravity IDE") && path.hasSuffix("state.vscdb") }
         d.command = { executable, args in
-            if executable.hasSuffix("security") { return "" }
+            if executable.hasSuffix("security") { return .output("") }
             assert(args[1].contains("Antigravity/User/"))
-            return topic.base64EncodedString()
+            return .output(topic.base64EncodedString())
         }
         assert(AntigravityQuotaClient.credential(d)?.refresh == "legacy-refresh")
         let summary = Data(#"{"groups":[{"name":"Gemini","buckets":[{"id":"5h","remainingFraction":0.2,"resetTime":12345},{"id":"weekly","remainingFraction":0.9,"resetTime":"2026-06-01T12:00:00Z"}]}]}"#.utf8)
@@ -116,9 +116,9 @@ import Foundation
         assert(official.meters[1].resetsAt!.timeIntervalSince(official.meters[1].windowStart!) == 604_800)
         d.exists = { _ in false }
         d.command = { executable, _ in
-            if executable.hasSuffix("ps") { return "42 /fixture/antigravity/language_server --csrf_token fixture-csrf" }
-            if executable.hasSuffix("lsof") { return "n127.0.0.1:12345" }
-            return ""
+            if executable.hasSuffix("ps") { return .output("42 /fixture/antigravity/language_server --csrf_token fixture-csrf") }
+            if executable.hasSuffix("lsof") { return .output("n127.0.0.1:12345") }
+            return .output("")
         }
         d.http = { req in
             assert(req.url!.host == "127.0.0.1")
@@ -126,6 +126,26 @@ import Foundation
             return (200, summary)
         }
         assert(AntigravityQuotaClient.fetchSync(d).kind == .ready)
+        let localFailures: [(Int, Data)?] = [nil, (503, Data("nope".utf8)), (200, Data("not-json".utf8))]
+        for failure in localFailures {
+            d.http = { _ in failure }
+            let missed = AntigravityQuotaClient.fetchSync(d)
+            assert(missed.kind == .failed && missed.meters.isEmpty)
+            let preserved = QuotaProviderSnapshot.merging(previous: official, incoming: missed)
+            assert(preserved.kind == .failed && preserved.meters == official.meters)
+        }
+        d.command = { executable, _ in executable.hasSuffix("security") ? .timedOut : .output("") }
+        d.http = { _ in fatalError("keychain timeout must not hit HTTP when no language server is running") }
+        assert(AntigravityQuotaClient.fetchSync(d) == .failedEmpty)
+        if case .timedOut = AntigravityQuotaClient.resolveCredential(d) {} else { assert(false) }
+        d.command = { executable, _ in executable.hasSuffix("security") ? .timedOut : .output("") }
+        d.read = { _ in plain }
+        assert(AntigravityQuotaClient.credential(d)?.refresh == "fixture-refresh")
+        assert(AntigravityQuotaClient.commandTimeout(for: "/usr/bin/security") == 120)
+        assert(AntigravityQuotaClient.commandTimeout(for: "/bin/ps") == 6)
+        assert(AntigravityQuotaClient.runCommand("/bin/sleep", ["2"], timeout: 0.2) == .timedOut)
+        assert(AntigravityQuotaClient.runCommand("/bin/echo", ["ok"], timeout: 2) == .output("ok\n"))
+        assert(AntigravityQuotaClient.runCommand("/usr/bin/false", [], timeout: 2) == .output(""))
         print("Antigravity fixture tests passed")
     }
 }

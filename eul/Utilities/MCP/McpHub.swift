@@ -76,13 +76,15 @@ actor McpHub {
         connecting.removeAll()
         listening = false
         lastError = nil
-        // HTTP.start publishes its listener after awaiting readiness. Drain it
-        // before stopping, and make a subsequent start wait for this cleanup.
+        // Readiness does not resume on .waiting or .cancelled. Cancel that
+        // listener first so stop cannot wait forever, then stop again in case
+        // it became ready anyway. A later start waits for this cleanup.
         let pendingStart = httpStartTask
         let previousShutdown = shutdownTask
         let shutdown = Task { [aggregator, http] in
             await previousShutdown?.value
             await aggregator.setOnActivity(nil)
+            await http.stop()
             _ = try? await pendingStart?.value
             await http.stop()
             await aggregator.replaceClients([])
@@ -207,13 +209,17 @@ actor McpHub {
     private func finishConnect(entry: McpServerEntry, generation gen: Int) async {
         guard running, generation == gen else { return }
         let client = await connectWithRetry(entry, generation: gen)
-        defer {
-            if generation == gen { connecting.remove(entry.id) }
-        }
-        guard running, generation == gen,
-              catalog.servers.contains(entry), entry.enabled
-        else {
+        // Clear before any exit handling or reapply. Otherwise a process that
+        // is already dead, or a catalog edit made while connecting, is ignored
+        // and nothing schedules another attempt.
+        if generation == gen { connecting.remove(entry.id) }
+        guard running, generation == gen, catalog.servers.contains(entry) else {
             discard(client)
+            if running, generation == gen,
+               catalog.servers.contains(where: { $0.id == entry.id && $0.enabled })
+            {
+                await applyCatalog(restartHTTP: false)
+            }
             return
         }
         if let client {
@@ -318,6 +324,11 @@ actor McpHub {
             connectedEntries[id] = entry
             await aggregator.clearFailed(id: id)
             guard running, generation == gen else { return }
+            if let process = client.process, !process.isRunning {
+                connecting.remove(id)
+                await handleUpstreamExit(id: id, process: process, generation: gen)
+                return
+            }
             await http.notifyToolsListChanged()
             guard running, generation == gen else { return }
             notify()
@@ -362,11 +373,14 @@ actor McpHub {
     }
 
     private func catalogDidChange(generation gen: Int) async {
-        guard running, generation == gen, !ignoreCatalogWrite else {
-            return
-        }
+        guard running, generation == gen else { return }
+        // Atomic replace delivers rename/delete on the old inode. Rearm before
+        // doing anything else so a later save is not stranded on that descriptor.
+        watchCatalog()
+        guard !ignoreCatalogWrite else { return }
         try? await Task.sleep(nanoseconds: 400_000_000)
         guard running, generation == gen, !Task.isCancelled else { return }
+        watchCatalog()
         catalog = McpCatalogStore.load()
         await applyCatalog(restartHTTP: false)
     }
