@@ -14,6 +14,28 @@ extension McpHub {
         await stopTask.value
     }
 
+    func fixtureEnable(id: String) async {
+        catalog.setEnabled(id: id, enabled: true)
+        await applyCatalog(restartHTTP: false)
+    }
+
+    func fixtureApplyCatalog() async {
+        await applyCatalog(restartHTTP: false)
+    }
+
+    func fixtureReplaceCommand(id: String, command: String) async {
+        guard let index = catalog.servers.firstIndex(where: { $0.id == id }) else { return }
+        catalog.servers[index].command = command
+        catalogSource?.cancel()
+        catalogSource = nil
+        catalogFileHandle?.closeFile()
+        catalogFileHandle = nil
+        ignoreCatalogWrite = true
+        try? McpCatalogStore.save(catalog)
+        ignoreCatalogWrite = false
+        await applyCatalog(restartHTTP: false)
+    }
+
     func fixtureOldCatalogEvent(generation gen: Int, diskCatalog: McpCatalog) async throws {
         // Isolate an already-enqueued old callback from fresh filesystem events.
         catalogSource?.cancel()

@@ -306,6 +306,9 @@
 "mcp.months_ago" = "%dmo ago";
 "mcp.years_ago" = "%dy ago";
 
+"quota.client_authentication_failed" = "ကလိုင်းယင့် အထောက်အထားစိစစ်မှု မအောင်မြင်ပါ။ eul2 အပ်ဒိတ်ကို စစ်ဆေးပါ။";
+"quota.previous_data" = "ယခင်ရယူထားသော ခွဲတမ်းဒေတာကို ပြသထားသည်";
+
 "quota.antigravity" = "Antigravity";
 "quota.antigravity.gemini_5h" = "Gemini 5h";
 "quota.antigravity.gemini_weekly" = "Gemini Weekly";

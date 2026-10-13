@@ -27,34 +27,48 @@ actor McpLoopbackHTTP {
         listener.newConnectionHandler = { connection in
             Task { await self.accept(connection) }
         }
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            let lock = NSLock()
-            var resumed = false
-            func resumeOnce(_ body: () -> Void) {
-                lock.lock()
-                defer { lock.unlock() }
-                guard !resumed else { return }
-                resumed = true
-                body()
-            }
-            listener.stateUpdateHandler = { state in
-                switch state {
-                case .ready:
-                    resumeOnce { continuation.resume() }
-                case let .failed(error):
-                    resumeOnce { continuation.resume(throwing: error) }
-                default:
-                    break
-                }
-            }
-            listener.start(queue: DispatchQueue(label: "eul2.mcp.http"))
-        }
+        // Published before readiness so stop() can cancel a listener that has
+        // not reached .ready. .waiting never resumes this continuation.
         self.listener = listener
+        do {
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                let lock = NSLock()
+                var resumed = false
+                func resumeOnce(_ body: () -> Void) {
+                    lock.lock()
+                    defer { lock.unlock() }
+                    guard !resumed else { return }
+                    resumed = true
+                    body()
+                }
+                listener.stateUpdateHandler = { state in
+                    switch state {
+                    case .ready:
+                        resumeOnce { continuation.resume() }
+                    case let .failed(error):
+                        resumeOnce { continuation.resume(throwing: error) }
+                    case .cancelled:
+                        resumeOnce { continuation.resume(throwing: CancellationError()) }
+                    default:
+                        break
+                    }
+                }
+                listener.start(queue: DispatchQueue(label: "eul2.mcp.http"))
+            }
+            guard self.listener === listener else { throw CancellationError() }
+        } catch {
+            if self.listener === listener {
+                listener.cancel()
+                self.listener = nil
+            }
+            throw error
+        }
     }
 
     func stop() async {
-        listener?.cancel()
+        let current = listener
         listener = nil
+        current?.cancel()
         for connection in connections.values {
             connection.cancel()
         }
@@ -134,7 +148,7 @@ actor McpLoopbackHTTP {
         let transport = StatefulHTTPServerTransport()
         let server = Server(
             name: "eul2",
-            version: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "2.2.3",
+            version: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "2.2.4",
             capabilities: .init(
                 prompts: .init(listChanged: true),
                 resources: .init(listChanged: true),

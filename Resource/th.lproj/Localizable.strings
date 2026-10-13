@@ -307,6 +307,9 @@
 "mcp.months_ago" = "%dmo ago";
 "mcp.years_ago" = "%dy ago";
 
+"quota.client_authentication_failed" = "การยืนยันตัวตนของไคลเอนต์ล้มเหลว โปรดตรวจสอบอัปเดตของ eul2";
+"quota.previous_data" = "กำลังแสดงข้อมูลโควต้าครั้งก่อน";
+
 "quota.antigravity" = "Antigravity";
 "quota.antigravity.gemini_5h" = "Gemini 5h";
 "quota.antigravity.gemini_weekly" = "Gemini Weekly";

@@ -307,6 +307,9 @@
 "mcp.months_ago" = "%dmo ago";
 "mcp.years_ago" = "%dy ago";
 
+"quota.client_authentication_failed" = "クライアント認証に失敗しました。eul2 のアップデートを確認してください。";
+"quota.previous_data" = "前回取得した利用枠を表示しています";
+
 "quota.antigravity" = "Antigravity";
 "quota.antigravity.gemini_5h" = "Gemini 5h";
 "quota.antigravity.gemini_weekly" = "Gemini Weekly";

@@ -7,16 +7,45 @@ enum AntigravityQuotaClient {
     private static let clientID = "1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com"
     private static let clientSecret = "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"
 
+    enum CommandResult: Equatable {
+        case output(String)
+        case timedOut
+    }
+
+    enum CredentialResolution {
+        case found(Credential)
+        case missing
+        case timedOut
+    }
+
     struct Dependencies {
-        var command: (String, [String]) -> String = runCommand
+        var command: (String, [String]) -> CommandResult = { executable, arguments in
+            runCommand(executable, arguments, timeout: commandTimeout(for: executable))
+        }
+
         var read: (String) -> Data? = { try? Data(contentsOf: URL(fileURLWithPath: $0)) }
         var exists: (String) -> Bool = { FileManager.default.fileExists(atPath: $0) }
         var http: (URLRequest) -> (Int, Data)? = request
         var home = FileManager.default.homeDirectoryForCurrentUser.path
     }
 
+    /// Keychain ACL prompts are interactive. The short kill used for other tools
+    /// closes the dialog and looks like a missing login.
+    static func commandTimeout(for executable: String) -> TimeInterval {
+        executable == "/usr/bin/security" ? 120 : 6
+    }
+
     static func fetchSync(_ dependencies: Dependencies = Dependencies()) -> QuotaProviderSnapshot {
-        guard let credential = credential(dependencies) else { return localQuota(dependencies) }
+        let credential: Credential
+        switch resolveCredential(dependencies) {
+        case .timedOut:
+            let local = localQuota(dependencies)
+            return local.kind == .unsigned ? .failedEmpty : local
+        case .missing:
+            return localQuota(dependencies)
+        case let .found(found):
+            credential = found
+        }
         var refresh = URLRequest(url: URL(string: "https://oauth2.googleapis.com/token")!)
         refresh.httpMethod = "POST"
         refresh.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
@@ -114,24 +143,61 @@ enum AntigravityQuotaClient {
     }
 
     static func credential(_ dependencies: Dependencies) -> Credential? {
+        if case let .found(value) = resolveCredential(dependencies) { return value }
+        return nil
+    }
+
+    static func resolveCredential(_ dependencies: Dependencies) -> CredentialResolution {
         let keychain = dependencies.command(
             "/usr/bin/security",
             ["find-generic-password", "-s", "gemini", "-a", "antigravity", "-w"]
         )
-        if let value = stored(Data(keychain.utf8)) { return value }
+        switch keychain {
+        case .timedOut:
+            switch fallbackCredential(dependencies) {
+            case let .found(value):
+                return .found(value)
+            case .missing, .timedOut:
+                return .timedOut
+            }
+        case let .output(keychain):
+            if let value = stored(Data(keychain.utf8)) { return .found(value) }
+            switch fallbackCredential(dependencies) {
+            case let .found(value):
+                return .found(value)
+            case .timedOut:
+                return .timedOut
+            case .missing:
+                return .missing
+            }
+        }
+    }
+
+    private enum FallbackLookup {
+        case found(Credential)
+        case missing
+        case timedOut
+    }
+
+    private static func fallbackCredential(_ dependencies: Dependencies) -> FallbackLookup {
         let jetski = dependencies.home + "/.gemini/jetski-standalone-oauth-token"
-        if let value = stored(dependencies.read(jetski)) { return value }
+        if let value = stored(dependencies.read(jetski)) { return .found(value) }
 
         let base = dependencies.home + "/Library/Application Support/"
         let root = base + (dependencies.exists(base + "Antigravity IDE") ? "Antigravity IDE" : "Antigravity")
         let path = root + "/User/globalStorage/state.vscdb"
-        guard dependencies.exists(path) else { return nil }
-        let value = dependencies.command(
+        guard dependencies.exists(path) else { return .missing }
+        switch dependencies.command(
             "/usr/bin/sqlite3",
             ["-readonly", path, "SELECT value FROM ItemTable WHERE key = 'antigravityUnifiedStateSync.oauthToken';"]
-        ).trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let data = Data(base64Encoded: value) else { return nil }
-        return legacy(data)
+        ) {
+        case .timedOut:
+            return .timedOut
+        case let .output(value):
+            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let data = Data(base64Encoded: trimmed), let credential = legacy(data) else { return .missing }
+            return .found(credential)
+        }
     }
 
     /// Length-delimited protobuf fields; skips other supported wire types with bounds checks.
@@ -184,14 +250,30 @@ enum AntigravityQuotaClient {
     }
 
     private static func localQuota(_ d: Dependencies) -> QuotaProviderSnapshot {
-        let processes = d.command("/bin/ps", ["-axo", "pid=,command="])
+        let processes: String
+        switch d.command("/bin/ps", ["-axo", "pid=,command="]) {
+        case .timedOut:
+            return .failedEmpty
+        case let .output(output):
+            processes = output
+        }
+        var attempted = false
+        var discoveryTimedOut = false
         for line in processes.components(separatedBy: .newlines) where line.lowercased().contains("antigravity") && line.contains("language_server") {
             let parts = line.split(whereSeparator: { $0.isWhitespace }).map(String.init)
             guard let pid = parts.first, let flag = parts.firstIndex(of: "--csrf_token"), flag + 1 < parts.count else { continue }
-            let ports = d.command("/usr/sbin/lsof", ["-nP", "-a", "-p", pid, "-iTCP", "-sTCP:LISTEN", "-Fn"])
+            let ports: String
+            switch d.command("/usr/sbin/lsof", ["-nP", "-a", "-p", pid, "-iTCP", "-sTCP:LISTEN", "-Fn"]) {
+            case .timedOut:
+                discoveryTimedOut = true
+                continue
+            case let .output(output):
+                ports = output
+            }
             for entry in ports.components(separatedBy: .newlines) where entry.hasPrefix("n") {
                 guard let port = entry.split(separator: ":").last.flatMap({ Int($0) }), (1...65535).contains(port) else { continue }
                 for scheme in ["https", "http"] {
+                    attempted = true
                     var req = URLRequest(url: URL(string: "\(scheme)://127.0.0.1:\(port)/exa.language_server_pb.LanguageServerService/RetrieveUserQuotaSummary")!)
                     req.httpMethod = "POST"
                     req.httpBody = Data("{\"forceRefresh\":true}".utf8)
@@ -205,6 +287,7 @@ enum AntigravityQuotaClient {
                 }
             }
         }
+        if attempted || discoveryTimedOut { return .failedEmpty }
         return .unsigned
     }
 
@@ -261,18 +344,47 @@ enum AntigravityQuotaClient {
         return result
     }
 
-    private static func runCommand(_ executable: String, _ arguments: [String]) -> String {
+    static func runCommand(_ executable: String, _ arguments: [String], timeout: TimeInterval) -> CommandResult {
         let process = Process()
         let pipe = Pipe()
         process.executableURL = URL(fileURLWithPath: executable)
         process.arguments = arguments
         process.standardOutput = pipe
         process.standardError = FileHandle.nullDevice
-        do { try process.run() } catch { return "" }
-        DispatchQueue.global().asyncAfter(deadline: .now() + 6) { if process.isRunning { process.terminate() } }
+        do { try process.run() } catch { return .output("") }
+        let completion = FirstCommandResult()
+        DispatchQueue.global().asyncAfter(deadline: .now() + timeout) {
+            guard process.isRunning else { return }
+            guard completion.commitTimeout() else { return }
+            if process.isRunning {
+                process.terminate()
+            }
+        }
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
         process.waitUntilExit()
-        guard process.terminationStatus == 0 else { return "" }
-        return String(data: data, encoding: .utf8) ?? ""
+        let output = String(data: data, encoding: .utf8) ?? ""
+        let finished: CommandResult = process.terminationStatus == 0 ? .output(output) : .output("")
+        return completion.commitExit(finished)
+    }
+
+    private final class FirstCommandResult: @unchecked Sendable {
+        private let lock = NSLock()
+        private var result: CommandResult?
+
+        func commitTimeout() -> Bool {
+            lock.lock()
+            defer { lock.unlock() }
+            guard result == nil else { return false }
+            result = .timedOut
+            return true
+        }
+
+        func commitExit(_ result: CommandResult) -> CommandResult {
+            lock.lock()
+            defer { lock.unlock() }
+            if let existing = self.result { return existing }
+            self.result = result
+            return result
+        }
     }
 }

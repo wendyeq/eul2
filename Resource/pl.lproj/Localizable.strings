@@ -308,6 +308,9 @@
 "mcp.months_ago" = "%dmo ago";
 "mcp.years_ago" = "%dy ago";
 
+"quota.client_authentication_failed" = "Uwierzytelnianie klienta nie powiodło się. Sprawdź aktualizacje eul2.";
+"quota.previous_data" = "Wyświetlane są poprzednie dane limitu";
+
 "quota.antigravity" = "Antigravity";
 "quota.antigravity.gemini_5h" = "Gemini 5h";
 "quota.antigravity.gemini_weekly" = "Gemini Weekly";
