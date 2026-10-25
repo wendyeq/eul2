@@ -39,10 +39,9 @@ enum McpUpstream {
         let process = Process()
         let stdin = Pipe()
         let stdout = Pipe()
-        let stderr = Pipe()
         process.standardInput = stdin
         process.standardOutput = stdout
-        process.standardError = stderr
+        process.standardError = FileHandle.nullDevice
         process.executableURL = URL(fileURLWithPath: McpPaths.resolveExecutable(command))
         process.arguments = entry.args
         var environment = ProcessInfo.processInfo.environment
