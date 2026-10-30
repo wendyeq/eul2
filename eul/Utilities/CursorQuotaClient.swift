@@ -3,12 +3,16 @@
 //  eul
 //
 
+import CommonCrypto
+import CryptoKit
 import Foundation
+import Security
 import SQLite3
 
 enum CursorQuotaClient {
     private static let usageURL = URL(string: "https://api2.cursor.sh/aiserver.v1.DashboardService/GetCurrentPeriodUsage")!
     private static let maxResponseBytes = 5 * 1024 * 1024
+    private static let safeStoragePrefix = "cursor-safe-storage:v1:"
 
     static func fetchSync() -> QuotaProviderSnapshot {
         guard let token = readAccessToken(), !token.isEmpty else {
@@ -51,7 +55,7 @@ enum CursorQuotaClient {
 
         if let cString = sqlite3_column_text(statement, 0) {
             let token = String(cString: cString).trimmingCharacters(in: .whitespacesAndNewlines)
-            return token.isEmpty ? nil : token
+            return token.isEmpty ? nil : decryptSafeStorage(token)
         }
 
         let blobBytes = sqlite3_column_bytes(statement, 0)
@@ -59,10 +63,115 @@ enum CursorQuotaClient {
             let data = Data(bytes: blob, count: Int(blobBytes))
             if let utf8 = String(data: data, encoding: .utf8) {
                 let token = utf8.trimmingCharacters(in: .whitespacesAndNewlines)
-                return token.isEmpty ? nil : token
+                return token.isEmpty ? nil : decryptSafeStorage(token)
             }
         }
         return nil
+    }
+
+    /// Decrypt Electron safeStorage encrypted token (cursor-safe-storage:v1:...)
+    private static func decryptSafeStorage(_ stored: String) -> String? {
+        guard stored.hasPrefix(safeStoragePrefix) else {
+            return stored // Already plaintext
+        }
+        let encoded = String(stored.dropFirst(safeStoragePrefix.count))
+        guard let ciphertext = Data(base64Encoded: encoded) else {
+            return nil
+        }
+
+        // Get encryption key from macOS Keychain ("Cursor Safe Storage")
+        guard let key = safeStorageKey() else {
+            return nil
+        }
+
+        // Chromium v10 format: "v10" (3 bytes) + IV (16 bytes) + ciphertext
+        guard ciphertext.count > 3 + 16,
+              ciphertext.prefix(3) == Data("v10".utf8) else {
+            return nil
+        }
+
+        let iv = ciphertext.subdata(in: 3..<19)
+        let encrypted = ciphertext.subdata(in: 19..<ciphertext.count)
+
+        // AES-256-CBC decrypt
+        guard let decrypted = aesCbcDecrypt(data: encrypted, key: key, iv: iv),
+              let token = String(data: decrypted, encoding: .utf8) else {
+            return nil
+        }
+        return token
+    }
+
+    /// Get the safeStorage key from macOS Keychain
+    private static func safeStorageKey() -> Data? {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: "Cursor Safe Storage",
+            kSecAttrAccount as String: "Cursor Key",
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne,
+        ]
+        var result: AnyObject?
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        guard status == errSecSuccess, let password = result as? Data else {
+            return nil
+        }
+        // Derive key using PBKDF2-HMAC-SHA1, salt="saltysalt", 1003 iterations
+        return deriveKey(password: password, salt: Data("saltysalt".utf8), iterations: 1003)
+    }
+
+    private static func deriveKey(password: Data, salt: Data, iterations: Int) -> Data? {
+        var derivedKey = Data(count: 16)
+        let result = derivedKey.withUnsafeMutableBytes { derivedKeyPtr in
+            salt.withUnsafeBytes { saltPtr in
+                password.withUnsafeBytes { passwordPtr in
+                    CCKeyDerivationPBKDF(
+                        CCPBKDFAlgorithm(kCCPBKDF2),
+                        passwordPtr.baseAddress?.assumingMemoryBound(to: Int8.self),
+                        password.count,
+                        saltPtr.baseAddress?.assumingMemoryBound(to: UInt8.self),
+                        salt.count,
+                        CCPseudoRandomAlgorithm(kCCPRFHmacAlgSHA1),
+                        UInt32(iterations),
+                        derivedKeyPtr.baseAddress?.assumingMemoryBound(to: UInt8.self),
+                        16
+                    )
+                }
+            }
+        }
+        return result == kCCSuccess ? derivedKey : nil
+    }
+
+    private static func aesCbcDecrypt(data: Data, key: Data, iv: Data) -> Data? {
+        guard key.count == kCCKeySizeAES128 || key.count == kCCKeySizeAES256,
+              iv.count == kCCBlockSizeAES128 else {
+            return nil
+        }
+        var decrypted = Data(count: data.count + kCCBlockSizeAES128)
+        var decryptedLength = 0
+        let dataCount = data.count
+        let decryptedCount = decrypted.count
+        let result = decrypted.withUnsafeMutableBytes { decryptedPtr in
+            data.withUnsafeBytes { dataPtr in
+                iv.withUnsafeBytes { ivPtr in
+                    key.withUnsafeBytes { keyPtr in
+                        CCCrypt(
+                            CCOperation(kCCDecrypt),
+                            CCAlgorithm(kCCAlgorithmAES),
+                            CCOptions(kCCOptionPKCS7Padding),
+                            keyPtr.baseAddress, key.count,
+                            ivPtr.baseAddress,
+                            dataPtr.baseAddress, dataCount,
+                            decryptedPtr.baseAddress, decryptedCount,
+                            &decryptedLength
+                        )
+                    }
+                }
+            }
+        }
+        guard result == kCCSuccess else {
+            return nil
+        }
+        return decrypted.prefix(decryptedLength)
     }
 
     private static func fetchUsage(token: String) -> QuotaProviderSnapshot {
