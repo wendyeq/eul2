@@ -4,7 +4,6 @@
 //
 
 import CommonCrypto
-import CryptoKit
 import Foundation
 import Security
 import SQLite3
@@ -61,12 +60,24 @@ enum CursorQuotaClient {
         let blobBytes = sqlite3_column_bytes(statement, 0)
         if blobBytes > 0, let blob = sqlite3_column_blob(statement, 0) {
             let data = Data(bytes: blob, count: Int(blobBytes))
-            if let utf8 = String(data: data, encoding: .utf8) {
-                let token = utf8.trimmingCharacters(in: .whitespacesAndNewlines)
+            if let text = decodeBlobString(data) {
+                let token = text.trimmingCharacters(in: .whitespacesAndNewlines)
                 return token.isEmpty ? nil : decryptSafeStorage(token)
             }
         }
         return nil
+    }
+
+    private static func decodeBlobString(_ data: Data) -> String? {
+        if data.count >= 2,
+           data.count.isMultiple(of: 2),
+           data[data.startIndex] != 0,
+           data[data.index(after: data.startIndex)] == 0,
+           let utf16 = String(data: data, encoding: .utf16LittleEndian)
+        {
+            return utf16
+        }
+        return String(data: data, encoding: .utf8)
     }
 
     /// Decrypt Electron safeStorage encrypted token (cursor-safe-storage:v1:...)
@@ -79,30 +90,59 @@ enum CursorQuotaClient {
             return nil
         }
 
-        // Get encryption key from macOS Keychain ("Cursor Safe Storage")
-        guard let key = safeStorageKey() else {
+        // Chromium OSCrypt v10/v11 format on macOS:
+        // "v10" or "v11" (3 bytes) + AES-128-CBC ciphertext with 16-space IV (0x20 * 16)
+        guard ciphertext.count > 3,
+              let version = String(data: ciphertext.prefix(3), encoding: .utf8),
+              version == "v10" || version == "v11"
+        else {
             return nil
         }
 
-        // Chromium v10 format: "v10" (3 bytes) + IV (16 bytes) + ciphertext
-        guard ciphertext.count > 3 + 16,
-              ciphertext.prefix(3) == Data("v10".utf8) else {
+        let encrypted = ciphertext.subdata(in: 3..<ciphertext.count)
+        let iv = Data(repeating: 0x20, count: kCCBlockSizeAES128)
+
+        guard let key = safeStorageKey(forceRefresh: false) else {
             return nil
         }
+        if let decrypted = aesCbcDecrypt(data: encrypted, key: key, iv: iv),
+           let token = String(data: decrypted, encoding: .utf8),
+           !token.isEmpty
+        {
+            return token
+        }
 
-        let iv = ciphertext.subdata(in: 3..<19)
-        let encrypted = ciphertext.subdata(in: 19..<ciphertext.count)
-
-        // AES-256-CBC decrypt
-        guard let decrypted = aesCbcDecrypt(data: encrypted, key: key, iv: iv),
-              let token = String(data: decrypted, encoding: .utf8) else {
+        // Key may have rotated in Keychain; clear cache and retry once.
+        guard let refreshedKey = safeStorageKey(forceRefresh: true),
+              refreshedKey != key,
+              let decrypted = aesCbcDecrypt(data: encrypted, key: refreshedKey, iv: iv),
+              let token = String(data: decrypted, encoding: .utf8),
+              !token.isEmpty
+        else {
             return nil
         }
         return token
     }
 
-    /// Get the safeStorage key from macOS Keychain
-    private static func safeStorageKey() -> Data? {
+    private static let keychainLock = NSLock()
+    private static var cachedSafeStorageKey: Data?
+    private static var keychainRefused = false
+
+    /// Get the safeStorage key from macOS Keychain (cached in memory so Keychain is not queried on every poll)
+    private static func safeStorageKey(forceRefresh: Bool) -> Data? {
+        keychainLock.lock()
+        defer { keychainLock.unlock() }
+
+        if forceRefresh {
+            cachedSafeStorageKey = nil
+        }
+        if let cachedSafeStorageKey {
+            return cachedSafeStorageKey
+        }
+        if keychainRefused, !forceRefresh {
+            return nil
+        }
+
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: "Cursor Safe Storage",
@@ -112,11 +152,19 @@ enum CursorQuotaClient {
         ]
         var result: AnyObject?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
-        guard status == errSecSuccess, let password = result as? Data else {
+        guard status == errSecSuccess,
+              let password = result as? Data,
+              let key = deriveKey(password: password, salt: Data("saltysalt".utf8), iterations: 1003)
+        else {
+            if status == errSecAuthFailed || status == errSecUserCanceled || status == errSecInteractionNotAllowed {
+                keychainRefused = true
+            }
             return nil
         }
-        // Derive key using PBKDF2-HMAC-SHA1, salt="saltysalt", 1003 iterations
-        return deriveKey(password: password, salt: Data("saltysalt".utf8), iterations: 1003)
+
+        cachedSafeStorageKey = key
+        keychainRefused = false
+        return key
     }
 
     private static func deriveKey(password: Data, salt: Data, iterations: Int) -> Data? {
@@ -143,7 +191,8 @@ enum CursorQuotaClient {
 
     private static func aesCbcDecrypt(data: Data, key: Data, iv: Data) -> Data? {
         guard key.count == kCCKeySizeAES128 || key.count == kCCKeySizeAES256,
-              iv.count == kCCBlockSizeAES128 else {
+              iv.count == kCCBlockSizeAES128
+        else {
             return nil
         }
         var decrypted = Data(count: data.count + kCCBlockSizeAES128)
