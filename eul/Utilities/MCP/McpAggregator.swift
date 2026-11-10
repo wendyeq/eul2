@@ -1,7 +1,28 @@
 import Foundation
 import MCP
 
+private struct McpListTimeoutError: Error, LocalizedError {
+    var errorDescription: String? { "list timeout" }
+}
+
+private final class McpOnceResume: @unchecked Sendable {
+    private let lock = NSLock()
+    private var done = false
+
+    func run(_ body: () -> Void) {
+        lock.lock()
+        let first = !done
+        done = true
+        lock.unlock()
+        if first {
+            body()
+        }
+    }
+}
+
 actor McpAggregator {
+    private static let listTimeoutNanoseconds: UInt64 = 20_000_000_000
+
     private var clients: [String: McpUpstreamClient] = [:]
     private var lastCall: [String: Date] = [:]
     private var lastError: [String: String] = [:]
@@ -81,8 +102,11 @@ actor McpAggregator {
     func listTools() async throws -> [Tool] {
         var tools: [Tool] = []
         for (id, upstream) in clients {
+            let client = upstream.client
             do {
-                let (listed, _) = try await upstream.client.listTools()
+                let (listed, _) = try await Self.withTimeout(Self.listTimeoutNanoseconds) {
+                    try await client.listTools()
+                }
                 for tool in listed {
                     tools.append(
                         Tool(
@@ -126,8 +150,11 @@ actor McpAggregator {
     func listResources() async throws -> [Resource] {
         var resources: [Resource] = []
         for (id, upstream) in clients {
+            let client = upstream.client
             do {
-                let (listed, _) = try await upstream.client.listResources()
+                let (listed, _) = try await Self.withTimeout(Self.listTimeoutNanoseconds) {
+                    try await client.listResources()
+                }
                 for resource in listed {
                     resources.append(
                         Resource(
@@ -138,7 +165,11 @@ actor McpAggregator {
                         )
                     )
                 }
-            } catch {}
+            } catch {
+                if error is McpListTimeoutError {
+                    markFailed(id: id, message: error.localizedDescription)
+                }
+            }
         }
         return resources
     }
@@ -155,8 +186,11 @@ actor McpAggregator {
     func listPrompts() async throws -> [Prompt] {
         var prompts: [Prompt] = []
         for (id, upstream) in clients {
+            let client = upstream.client
             do {
-                let (listed, _) = try await upstream.client.listPrompts()
+                let (listed, _) = try await Self.withTimeout(Self.listTimeoutNanoseconds) {
+                    try await client.listPrompts()
+                }
                 for prompt in listed {
                     prompts.append(
                         Prompt(
@@ -166,9 +200,36 @@ actor McpAggregator {
                         )
                     )
                 }
-            } catch {}
+            } catch {
+                if error is McpListTimeoutError {
+                    markFailed(id: id, message: error.localizedDescription)
+                }
+            }
         }
         return prompts
+    }
+
+    private static func withTimeout<T: Sendable>(
+        _ nanoseconds: UInt64,
+        operation: @escaping @Sendable () async throws -> T
+    ) async throws -> T {
+        try await withCheckedThrowingContinuation { continuation in
+            let once = McpOnceResume()
+            let timer = Task {
+                try await Task.sleep(nanoseconds: nanoseconds)
+                once.run { continuation.resume(throwing: McpListTimeoutError()) }
+            }
+            Task {
+                do {
+                    let value = try await operation()
+                    timer.cancel()
+                    once.run { continuation.resume(returning: value) }
+                } catch {
+                    timer.cancel()
+                    once.run { continuation.resume(throwing: error) }
+                }
+            }
+        }
     }
 
     func getPrompt(name: String, arguments: [String: String]?) async throws -> GetPrompt.Result {

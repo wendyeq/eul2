@@ -68,9 +68,9 @@ enum McpConnectCLI {
                 return .init(description: description, messages: messages)
             }
             try await server.start(transport: StdioTransport())
-            while true {
-                try await Task.sleep(nanoseconds: 60_000_000_000)
-            }
+            await server.waitUntilCompleted()
+            await client.disconnect()
+            return 0
         } catch {
             fputs("eul mcp-connect: \(error.localizedDescription)\n", stderr)
             return 1
